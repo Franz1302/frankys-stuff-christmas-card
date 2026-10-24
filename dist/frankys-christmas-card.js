@@ -1,12 +1,13 @@
-/* Franky's Christmas Card v0.2.1 public beta — HACS default cinematic video + de/en strings — standalone Home Assistant Lovelace card
+/* Franky's Christmas Card v0.2.2 public beta — HACS default cinematic video + de/en strings — standalone Home Assistant Lovelace card
  * One monitor; no helpers, automations, Browser Mod, or cloud services required.
- * Media assets may be configured by the user; no externally sourced assets bundled.
+ * Bundled WebM/WebP and audio files are installed with HACS; individual asset URLs can be overridden.
  */
 (function () {
 'use strict';
 if (customElements.get('frankys-christmas-card')) return;
 /* HACS installs the bundled animation alongside the JS. Manual installs may override video. */
 var HACS_VIDEO='/local/community/frankys-stuff-christmas-card/sleigh.webm';
+var HACS_IOS_VIDEO='/local/community/frankys-stuff-christmas-card/sleigh-ipad.webp';
 var HACS_SOUND='/local/community/frankys-stuff-christmas-card/santa.mp3';
 var HACS_BELLS='/local/community/frankys-stuff-christmas-card/bells.mp3';
 
@@ -125,6 +126,13 @@ function cleanUrl(value) {
   if (url.indexOf('//') === 0 || /^javascript:|^data:/i.test(url)) return '';
   return url;
 }
+/* Prefer pre-keyed animated WebP on Apple/Safari; older iOS may fall back to SVG. */
+function prefersAppleWebP() {
+  var ua=navigator.userAgent||'';
+  return /iPad|iPhone|iPod/i.test(ua) ||
+    (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1) ||
+    (/AppleWebKit/i.test(ua) && /Safari/i.test(ua) && !/Chrome|Chromium|Edg|OPR/i.test(ua));
+}
 function finite(n, fallback, min, max) {
   n=Number(n); return isFinite(n) ? Math.max(min,Math.min(max,n)) : fallback;
 }
@@ -152,6 +160,7 @@ class FrankysChristmasCard extends HTMLElement {
    this._config={
      title:typeof raw.title==='string'?raw.title:"Franky's Christmas",
      video:raw.video===false||raw.video===null?'':(cleanUrl(raw.video)||HACS_VIDEO),
+     ios_video:raw.ios_video===false||raw.ios_video===null?'':(cleanUrl(raw.ios_video)||((typeof raw.video==='string'&&cleanUrl(raw.video))?'':HACS_IOS_VIDEO)),
      sound:raw.sound===false||raw.sound===null?'':(cleanUrl(raw.sound)||HACS_SOUND),
      bells:raw.bells===false||raw.bells===null?'':(cleanUrl(raw.bells)||HACS_BELLS),
      fallback:cleanUrl(raw.fallback),
@@ -306,7 +315,20 @@ class FrankysChristmasCard extends HTMLElement {
    var vehicle=document.createElement('div');vehicle.style.cssText='position:absolute;left:0;top:34%;pointer-events:none;animation:fc-flight '+c.duration+'s linear forwards;width:'+Math.round(Math.min(850,innerWidth*c.width_percent/100))+'px;';
    var img=document.createElement('img');img.alt='';img.style.cssText='display:block;width:100%;height:auto';
    img.src=c.fallback||'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(FALLBACK_SVG);
-   if(c.video){
+   if(c.video && prefersAppleWebP() && c.ios_video){
+     /* The WebM alpha channel is ignored in some Safari builds; use our
+        pre-matted animated WebP rather than a live green-screen filter. */
+     var appleFrame=document.createElement('img');
+     appleFrame.alt='';
+     appleFrame.setAttribute('aria-hidden','true');
+     appleFrame.style.cssText='display:none;width:100%;height:auto;pointer-events:none';
+     appleFrame.onload=function(){
+       if(self._stage===stage || !self._stage) {img.style.display='none';appleFrame.style.display='block';}
+     };
+     appleFrame.onerror=function(){appleFrame.style.display='none';img.style.display='block';};
+     appleFrame.src=c.ios_video;
+     vehicle.appendChild(appleFrame);
+   } else if(c.video){
      var vid=document.createElement('video');
      vid.autoplay=false;vid.muted=true;vid.loop=true;vid.playsInline=true;
      vid.setAttribute('muted','');vid.setAttribute('playsinline','');
