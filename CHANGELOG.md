@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.4 — Responsive layout & visual editor
+- Native Home Assistant visual configuration editor, with localized controls (German/English)
+- Responsive auto/compact/comfortable card density, accessible touch targets (at least 44px)
+- Native Sections-grid sizing: 12 columns default, resizable down to 6 columns, auto content height
+- Graphically configurable flight times, duration, sleigh size and sound volumes; advanced media URLs
+- Existing daily random schedule, iOS/WebM media selection, stardust and Ko-fi retained
+
 ## v0.2.3 — Quiet hours / configurable flight hours
 - Automatic flights only between 09:00 and 22:00 by default (local display time)
 - Start and end time editable in the card and via YAML (`schedule_start`, `schedule_end`)
