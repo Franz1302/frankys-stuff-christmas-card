@@ -27,7 +27,7 @@ Designed for **one monitor** — no helpers, automations, Browser Mod, or cloud 
 4. Refresh Home Assistant, then **Edit dashboard → Add card**.
 5. Choose **Franky's Christmas Card**, click **Test flight** and **Enable** when ready.
 
-The video and the audio are installed together with the JavaScript from the repository's `dist/` folder. No extra files, helpers or automations to install.
+The video, iPad/Safari transparent animated WebP, and audio are installed together with the JavaScript from the repository's `dist/` folder. No extra files, helpers or automations to install.
 
 ### Minimal YAML
 
@@ -48,7 +48,7 @@ sound_volume: 0.55
 bells_volume: 0.78
 ```
 
-Set `video`, `sound`, `bells`, or `fallback` to a local `/local/` URL to override the bundled media. Set `video: false`, `sound: false` or `bells: false` to disable that asset individually.
+Set `video`, `ios_video`, `sound`, `bells`, or `fallback` to a local `/local/` URL to override the bundled media. Set `video: false`, `sound: false` or `bells: false` to disable that asset individually.
 
 ## Scheduling
 
@@ -58,7 +58,7 @@ Selecting a minute interval replaces daily mode on that display. Each enabled di
 
 ## Compatibility
 
-The video is a transparent WebM (VP9 with alpha). Older iPads and Fire tablets may show the illustrated fallback instead. Autoplay sound may require interaction on browsers such as Silk and Safari.
+**Automatic device selection:** On iPad, iPhone and Safari, the card shows a transparent animated WebP (`sleigh-ipad.webp`) to avoid green edges. Other browsers continue using transparent WebM (`sleigh.webm`). No manual setting is needed. An older browser unable to render its preferred format falls back to an illustrated SVG. Custom video setups can override the iOS path with `ios_video:`. The original WebM is retained for non-Apple browsers. Autoplay sound may require interaction on browsers such as Silk and Safari.
 
 ## Installation without HACS
 
