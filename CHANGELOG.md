@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.2 — iOS display compatibility
+- Automatic Safari/iOS animated WebP with clean alpha, original WebM on other browsers
+- Original video, stardust, bells, Santa voice and scheduling unchanged
+- Animated WebP is packaged beside the existing files in HACS
+
 ## v0.2.1 — Public beta
 - Prominent Ko-fi support buttons in the README and Christmas card
 - SPDX-recognized MIT source license
