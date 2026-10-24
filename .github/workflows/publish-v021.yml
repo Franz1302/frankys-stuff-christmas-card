@@ -1,0 +1,39 @@
+name: Publish v0.2.1
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-v021.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v4
+      - name: Validate JavaScript and all bundled media
+        run: |
+          node --check dist/frankys-christmas-card.js
+          test -s dist/sleigh.webm
+          test -s dist/santa.mp3
+          test -s dist/bells.mp3
+          test -s assets/preview.jpg
+      - name: HACS validation
+        uses: hacs/action@main
+        with:
+          category: plugin
+      - name: Publish v0.2.1 once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v0.2.1 >/dev/null 2>&1; then
+            echo "Release v0.2.1 already exists; leaving it unchanged."
+            exit 0
+          fi
+          gh release create v0.2.1 \
+            --target "$GITHUB_SHA" \
+            --title "Franky's Christmas Card v0.2.1" \
+            --notes-file RELEASE_NOTES.md \
+            --latest
