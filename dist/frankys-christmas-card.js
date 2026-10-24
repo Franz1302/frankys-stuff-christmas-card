@@ -1,4 +1,4 @@
-/* Franky's Christmas Card v0.2.2 public beta — HACS default cinematic video + de/en strings — standalone Home Assistant Lovelace card
+/* Franky's Christmas Card v0.2.3 public beta — HACS default cinematic video + de/en strings — standalone Home Assistant Lovelace card
  * One monitor; no helpers, automations, Browser Mod, or cloud services required.
  * Bundled WebM/WebP and audio files are installed with HACS; individual asset URLs can be overridden.
  */
@@ -133,6 +133,12 @@ function prefersAppleWebP() {
     (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1) ||
     (/AppleWebKit/i.test(ua) && /Safari/i.test(ua) && !/Chrome|Chromium|Edg|OPR/i.test(ua));
 }
+function parseTime(value,fallback){
+  return typeof value==='string'&&/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(value)?value:fallback;
+}
+function timeMinutes(value){
+  var p=value.split(':');return Number(p[0])*60+Number(p[1]);
+}
 function finite(n, fallback, min, max) {
   n=Number(n); return isFinite(n) ? Math.max(min,Math.min(max,n)) : fallback;
 }
@@ -141,6 +147,7 @@ var CSS = ':host{display:block}ha-card{padding:16px 18px;color:var(--primary-tex
 '.dot{width:8px;height:8px;border-radius:50%;background:#8794a6;display:inline-block;margin-right:5px}.dot.on{background:#32c992;box-shadow:0 0 8px #32c992}'+
 '.buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.buttons button{border:1px solid rgba(125,161,193,.45);border-radius:10px;background:rgba(50,103,142,.15);color:inherit;cursor:pointer;padding:10px 13px;font:inherit;font-size:13px;min-height:38px}.buttons button.active{background:#12678d;color:white;border-color:#27b7e9}.buttons button:focus-visible{outline:2px solid #22bee6;outline-offset:2px}'+
 '.buttons a.kofi{display:inline-flex;align-items:center;text-decoration:none;background:#ff5e5b;color:#fff;font-weight:700;border:1px solid #ff5e5b;border-radius:10px;padding:10px 13px;font-size:13px;min-height:38px;box-sizing:border-box}.buttons a.kofi:focus-visible{outline:2px solid #22bee6;outline-offset:2px}'+
+'.time-window{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;font-size:12px}.time-window input{width:88px;border:1px solid #7c919e;border-radius:8px;padding:6px;background:var(--card-background-color,#141b2a);color:var(--primary-text-color,#eef6fc);color-scheme:dark;font:inherit}'+
 '.detail{display:flex;align-items:center;gap:8px;font-size:12px;opacity:.85;margin-top:13px}.detail select{background:var(--card-background-color,#141b2a);color:inherit;border:1px solid #7c919e;border-radius:8px;padding:6px 7px;font:inherit}.note{font-size:11px;opacity:.65;margin-top:8px}';
 
 class FrankysChristmasCard extends HTMLElement {
@@ -165,6 +172,8 @@ class FrankysChristmasCard extends HTMLElement {
      bells:raw.bells===false||raw.bells===null?'':(cleanUrl(raw.bells)||HACS_BELLS),
      fallback:cleanUrl(raw.fallback),
      interval_min:min, interval_max:max,
+     schedule_start:parseTime(raw.schedule_start,'09:00'),
+     schedule_end:parseTime(raw.schedule_end,'22:00'),
      sound_volume:finite(raw.sound_volume,.55,0,1),
      bells_volume:finite(raw.bells_volume,.78,0,1),
      width_percent:finite(raw.width_percent,60,20,95),
@@ -172,6 +181,9 @@ class FrankysChristmasCard extends HTMLElement {
      storage_key:typeof raw.storage_key==='string'?raw.storage_key.replace(/[^a-z0-9_-]/gi,'').slice(0,48):'default'
    };
    if(this._config.storage_key==='')this._config.storage_key='default';
+   if(timeMinutes(this._config.schedule_start)>=timeMinutes(this._config.schedule_end)){
+     this._config.schedule_start='09:00';this._config.schedule_end='22:00';
+   }
    this._readState();this._render();
    if(this.isConnected)this._applySchedule();
  }
@@ -194,7 +206,7 @@ class FrankysChristmasCard extends HTMLElement {
    var de={
      subtitle:'Weihnachtsflug · nur dieser Bildschirm',
      test:'🛷 Testflug',coffee:'☕ Danke für den Kaffee',interval:'Flugintervall',
-     daily:'1–10 Flüge/Tag (Standard)',defaultHint:'Standard: zufällig 1–10 Flüge pro Tag, lokal für diesen Bildschirm. Minutenintervalle bleiben wählbar.',
+     daily:'1–10 Flüge/Tag (Standard)',hours:'Flugzeiten',from:'Von',to:'Bis',defaultHint:'Automatisch nur innerhalb der eingestellten Uhrzeiten; Testflug jederzeit möglich.',
      turnOn:'▶ Einschalten',turnOff:'⏸ Ausschalten',
      soundOn:'🔊 Ton an',soundOff:'🔇 Ton aus',
      active:'AKTIV',inactive:'AUS'
@@ -202,7 +214,7 @@ class FrankysChristmasCard extends HTMLElement {
    var en={
      subtitle:'Christmas flight · this screen only',
      test:'🛷 Test flight',coffee:'☕ Thanks for Coffee',interval:'Flight schedule',
-     daily:'1–10 flights/day (default)',defaultHint:'Default: 1–10 random flights per day, locally on this screen. Minute intervals remain available.',
+     daily:'1–10 flights/day (default)',hours:'Flight hours',from:'From',to:'Until',defaultHint:'Automatic flights only during your chosen hours; manual test flight works anytime.',
      turnOn:'▶ Enable',turnOff:'⏸ Disable',
      soundOn:'🔊 Sound on',soundOff:'🔇 Sound off',
      active:'ON',inactive:'OFF'
@@ -217,19 +229,39 @@ class FrankysChristmasCard extends HTMLElement {
    var data=null;try{data=JSON.parse(localStorage.getItem(this._key())||'null');}catch(e){}
    this._state={
      enabled:!!(data&&data.enabled),sound:!!(data&&data.sound),
-     interval:(data&&['3-8','5-10','10-20','1-2'].indexOf(data.interval)!==-1)?data.interval:''
+     interval:(data&&['3-8','5-10','10-20','1-2'].indexOf(data.interval)!==-1)?data.interval:'',
+     start_time:parseTime(data&&data.start_time,this._config.schedule_start),
+     end_time:parseTime(data&&data.end_time,this._config.schedule_end)
    };
+   if(timeMinutes(this._state.start_time)>=timeMinutes(this._state.end_time)){
+     this._state.start_time=this._config.schedule_start;
+     this._state.end_time=this._config.schedule_end;
+   }
  }
  _save(){try{localStorage.setItem(this._key(),JSON.stringify(this._state));}catch(e){}}
  _render(){
    if(!this.shadowRoot||!this._config)return;
-   this.shadowRoot.innerHTML='<style>'+CSS+'</style><ha-card><div class="top"><span class="mark">🎅</span><div class="heading"><div class="title"></div><div class="subtitle">'+this._txt('subtitle')+'</div></div><div class="status"><span class="dot"></span><span class="status-text"></span></div></div><div class="buttons"><button id="toggle" type="button"></button><button id="sound" type="button"></button><button id="test" type="button">'+this._txt('test')+'</button><a class="kofi" href="https://ko-fi.com/Frankys_Stuff" target="_blank" rel="noopener noreferrer">'+this._txt('coffee')+'</a></div><div class="detail"><label for="times">'+this._txt('interval')+'</label><select id="times"><option value="default">'+this._txt('daily')+'</option><option value="1-2">1–2 Minuten</option><option value="3-8">3–8 Minuten</option><option value="5-10">5–10 Minuten</option><option value="10-20">10–20 Minuten</option></select></div><div class="note">'+this._txt('defaultHint')+'</div></ha-card>';
+   this.shadowRoot.innerHTML='<style>'+CSS+'</style><ha-card><div class="top"><span class="mark">🎅</span><div class="heading"><div class="title"></div><div class="subtitle">'+this._txt('subtitle')+'</div></div><div class="status"><span class="dot"></span><span class="status-text"></span></div></div><div class="buttons"><button id="toggle" type="button"></button><button id="sound" type="button"></button><button id="test" type="button">'+this._txt('test')+'</button><a class="kofi" href="https://ko-fi.com/Frankys_Stuff" target="_blank" rel="noopener noreferrer">'+this._txt('coffee')+'</a></div><div class="detail"><label for="times">'+this._txt('interval')+'</label><select id="times"><option value="default">'+this._txt('daily')+'</option><option value="1-2">1–2 Minuten</option><option value="3-8">3–8 Minuten</option><option value="5-10">5–10 Minuten</option><option value="10-20">10–20 Minuten</option></select></div><div class="time-window"><strong>'+this._txt('hours')+'</strong><label for="from">'+this._txt('from')+'</label><input id="from" type="time"><label for="to">'+this._txt('to')+'</label><input id="to" type="time"></div><div class="note">'+this._txt('defaultHint')+'</div></ha-card>';
    this.shadowRoot.querySelector('.title').textContent=this._config.title;
    var self=this;
    this.shadowRoot.getElementById('toggle').onclick=function(){self._state.enabled=!self._state.enabled;self._save();self._update();if(!self._state.enabled)self._stop();self._applySchedule();};
    this.shadowRoot.getElementById('sound').onclick=function(){self._state.sound=!self._state.sound;self._save();self._update();};
    this.shadowRoot.getElementById('test').onclick=function(){self._play();};
    this.shadowRoot.getElementById('times').onchange=function(){self._state.interval=this.value==='default'?'':this.value;self._save();self._applySchedule();};
+   function onHoursChange(){
+     var from=self.shadowRoot.getElementById('from'),to=self.shadowRoot.getElementById('to');
+     var start=parseTime(from.value,self._state.start_time);
+     var end=parseTime(to.value,self._state.end_time);
+     if(timeMinutes(start)>=timeMinutes(end)){
+       from.value=self._state.start_time;to.value=self._state.end_time;return;
+     }
+     if(start===self._state.start_time&&end===self._state.end_time)return;
+     self._state.start_time=start;self._state.end_time=end;self._save();
+     try{localStorage.removeItem(self._key()+'-daily-plan');}catch(ignore){}
+     self._applySchedule();
+   }
+   this.shadowRoot.getElementById('from').onchange=onHoursChange;
+   this.shadowRoot.getElementById('to').onchange=onHoursChange;
    this._update();
  }
  _update(){
@@ -242,56 +274,73 @@ class FrankysChristmasCard extends HTMLElement {
    this.shadowRoot.querySelector('.dot').className=on?'dot on':'dot';
    this.shadowRoot.querySelector('.status-text').textContent=on?this._txt('active'):this._txt('inactive');
    this.shadowRoot.getElementById('times').value=this._state.interval||'default';
+   this.shadowRoot.getElementById('from').value=this._state.start_time;
+   this.shadowRoot.getElementById('to').value=this._state.end_time;
  }
  _clearSchedule(){if(this._timer)clearTimeout(this._timer);this._timer=0;}
  _onVisibility(){if(document.hidden){this._clearSchedule();this._stop();}else this._applySchedule();}
+ _withinWindow(d){
+   var now=d||new Date();
+   var minute=now.getHours()*60+now.getMinutes();
+   return minute>=timeMinutes(this._state.start_time)&&minute<timeMinutes(this._state.end_time);
+ }
  _applySchedule(){
    this._clearSchedule();
-   if(!this.isConnected||!this._state||!this._state.enabled||document.hidden){if(window.__FrankysChristmasStandaloneOwner===this)window.__FrankysChristmasStandaloneOwner=null;return;}
+   if(!this.isConnected||!this._state||!this._state.enabled||document.hidden){
+     if(window.__FrankysChristmasStandaloneOwner===this)window.__FrankysChristmasStandaloneOwner=null;
+     return;
+   }
    if(window.__FrankysChristmasStandaloneOwner&&window.__FrankysChristmasStandaloneOwner!==this)return;
    window.__FrankysChristmasStandaloneOwner=this;
-   var self=this;
-   /* Default: choose 1–10 random visits per local calendar day, save them on
-      this monitor so changing dashboard views does not regenerate the quota. */
+   var self=this,now=new Date(),nowMs=now.getTime();
+   var start=new Date(now),end=new Date(now);
+   var a=this._state.start_time.split(':').map(Number),b=this._state.end_time.split(':').map(Number);
+   start.setHours(a[0],a[1],0,0);end.setHours(b[0],b[1],0,0);
+   var startMs=start.getTime(),endMs=end.getTime();
    if(!this._state.interval){
-     var now=new Date(),day=now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
-     var planKey=this._key()+'-daily-plan',plan=null;
-     try{plan=JSON.parse(localStorage.getItem(planKey)||'null');}catch(e){}
-     if(!plan||plan.day!==day||!Array.isArray(plan.times)){
-       var midnight=new Date(now);midnight.setHours(23,59,59,0);
-       var low=now.getTime()+60000,high=midnight.getTime()-60000;
+     /* Randomize the complete daily window and persist it on this browser.
+        Never compress all today's flights into the remaining late-evening time. */
+     var day=now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
+     var key=this._key()+'-daily-plan',plan=null;
+     try{plan=JSON.parse(localStorage.getItem(key)||'null');}catch(ignore){}
+     if(!plan||plan.day!==day||plan.start!==this._state.start_time||plan.end!==this._state.end_time||!Array.isArray(plan.times)){
        var count=1+Math.floor(Math.random()*10),times=[];
-       /* Near midnight: leave the remainder of today free rather than
-          bunching numerous flights into its last few minutes. */
-       if(high-low>180000){
+       var low=startMs+1000,high=endMs-this._config.duration*1000-2000;
+       if(high>low){
          var slot=(high-low)/count;
-         for(var i=0;i<count;i++){
-           times.push(Math.round(low+(i+Math.random())*slot));
-         }
+         for(var i=0;i<count;i++)times.push(Math.round(low+(i+Math.random())*slot));
        }
-       plan={day:day,times:times};
-       try{localStorage.setItem(planKey,JSON.stringify(plan));}catch(e){}
+       plan={day:day,start:this._state.start_time,end:this._state.end_time,times:times};
+       try{localStorage.setItem(key,JSON.stringify(plan));}catch(ignore){}
      }
-     var instant=Date.now(),next=0;
-     for(var j=0;j<plan.times.length;j++){
-       if(plan.times[j]>instant+500){next=plan.times[j];break;}
-     }
+     var next=0;
+     for(var j=0;j<plan.times.length;j++)if(plan.times[j]>nowMs+500){next=plan.times[j];break;}
      if(next){
        this._timer=setTimeout(function(){
          self._timer=0;
-         if(self._state.enabled&&!document.hidden)self._play();
+         if(self._state.enabled&&!document.hidden&&self._withinWindow())self._play();
          self._applySchedule();
-       },Math.max(100,next-instant));
+       },Math.max(100,next-nowMs));
      }else{
        var tomorrow=new Date(now);tomorrow.setHours(24,0,3,0);
-       this._timer=setTimeout(function(){self._timer=0;self._applySchedule();},Math.max(1000,tomorrow.getTime()-instant));
+       this._timer=setTimeout(function(){self._timer=0;self._applySchedule();},Math.max(1000,tomorrow.getTime()-nowMs));
      }
      return;
    }
-   /* Original minute intervals remain available via the selector. */
+   /* Minute modes also respect the active-time window. */
    var pair=this._state.interval.split('-').map(Number);
    var ms=(pair[0]+Math.random()*(pair[1]-pair[0]))*60000;
-   this._timer=setTimeout(function(){self._timer=0;self._play();self._applySchedule();},ms);
+   var when;
+   if(nowMs<startMs)when=startMs+ms;
+   else if(nowMs+ms+this._config.duration*1000>=endMs){
+     var tomorrowStart=new Date(start);tomorrowStart.setDate(tomorrowStart.getDate()+1);
+     when=tomorrowStart.getTime()+ms;
+   }else when=nowMs+ms;
+   this._timer=setTimeout(function(){
+     self._timer=0;
+     if(self._state.enabled&&!document.hidden&&self._withinWindow())self._play();
+     self._applySchedule();
+   },Math.max(100,when-nowMs));
  }
  _stop(){
    this._alive=false;
