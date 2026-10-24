@@ -10,7 +10,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check dist/frankys-christmas-card.js
+        run: |
+          node --check dist/frankys-christmas-card.js
+          node tests/editor.test.cjs
       - name: Ensure bundled assets are present
         run: |
           test -s dist/sleigh.webm
