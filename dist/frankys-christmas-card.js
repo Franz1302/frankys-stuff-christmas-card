@@ -1,4 +1,4 @@
-/* Franky's Christmas Card v0.2.0 public beta — HACS default cinematic video + de/en strings — standalone Home Assistant Lovelace card
+/* Franky's Christmas Card v0.2.1 public beta — HACS default cinematic video + de/en strings — standalone Home Assistant Lovelace card
  * One monitor; no helpers, automations, Browser Mod, or cloud services required.
  * Media assets may be configured by the user; no externally sourced assets bundled.
  */
@@ -132,6 +132,7 @@ var CSS = ':host{display:block}ha-card{padding:16px 18px;color:var(--primary-tex
 '.top{display:flex;align-items:center;gap:11px}.mark{font-size:28px;line-height:1}.heading{flex:1;min-width:0}.title{font-size:16px;font-weight:700}.subtitle{font-size:12px;opacity:.72;margin-top:3px}.status{font-size:12px;white-space:nowrap;color:var(--secondary-text-color,#aab)}'+
 '.dot{width:8px;height:8px;border-radius:50%;background:#8794a6;display:inline-block;margin-right:5px}.dot.on{background:#32c992;box-shadow:0 0 8px #32c992}'+
 '.buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.buttons button{border:1px solid rgba(125,161,193,.45);border-radius:10px;background:rgba(50,103,142,.15);color:inherit;cursor:pointer;padding:10px 13px;font:inherit;font-size:13px;min-height:38px}.buttons button.active{background:#12678d;color:white;border-color:#27b7e9}.buttons button:focus-visible{outline:2px solid #22bee6;outline-offset:2px}'+
+'.buttons a.kofi{display:inline-flex;align-items:center;text-decoration:none;background:#ff5e5b;color:#fff;font-weight:700;border:1px solid #ff5e5b;border-radius:10px;padding:10px 13px;font-size:13px;min-height:38px;box-sizing:border-box}.buttons a.kofi:focus-visible{outline:2px solid #22bee6;outline-offset:2px}'+
 '.detail{display:flex;align-items:center;gap:8px;font-size:12px;opacity:.85;margin-top:13px}.detail select{background:var(--card-background-color,#141b2a);color:inherit;border:1px solid #7c919e;border-radius:8px;padding:6px 7px;font:inherit}.note{font-size:11px;opacity:.65;margin-top:8px}';
 
 class FrankysChristmasCard extends HTMLElement {
@@ -183,7 +184,7 @@ class FrankysChristmasCard extends HTMLElement {
  _txt(id){
    var de={
      subtitle:'Weihnachtsflug · nur dieser Bildschirm',
-     test:'🛷 Testflug',interval:'Flugintervall',
+     test:'🛷 Testflug',coffee:'☕ Danke für den Kaffee',interval:'Flugintervall',
      daily:'1–10 Flüge/Tag (Standard)',defaultHint:'Standard: zufällig 1–10 Flüge pro Tag, lokal für diesen Bildschirm. Minutenintervalle bleiben wählbar.',
      turnOn:'▶ Einschalten',turnOff:'⏸ Ausschalten',
      soundOn:'🔊 Ton an',soundOff:'🔇 Ton aus',
@@ -191,7 +192,7 @@ class FrankysChristmasCard extends HTMLElement {
    };
    var en={
      subtitle:'Christmas flight · this screen only',
-     test:'🛷 Test flight',interval:'Flight schedule',
+     test:'🛷 Test flight',coffee:'☕ Thanks for Coffee',interval:'Flight schedule',
      daily:'1–10 flights/day (default)',defaultHint:'Default: 1–10 random flights per day, locally on this screen. Minute intervals remain available.',
      turnOn:'▶ Enable',turnOff:'⏸ Disable',
      soundOn:'🔊 Sound on',soundOff:'🔇 Sound off',
@@ -213,7 +214,7 @@ class FrankysChristmasCard extends HTMLElement {
  _save(){try{localStorage.setItem(this._key(),JSON.stringify(this._state));}catch(e){}}
  _render(){
    if(!this.shadowRoot||!this._config)return;
-   this.shadowRoot.innerHTML='<style>'+CSS+'</style><ha-card><div class="top"><span class="mark">🎅</span><div class="heading"><div class="title"></div><div class="subtitle">'+this._txt('subtitle')+'</div></div><div class="status"><span class="dot"></span><span class="status-text"></span></div></div><div class="buttons"><button id="toggle" type="button"></button><button id="sound" type="button"></button><button id="test" type="button">'+this._txt('test')+'</button></div><div class="detail"><label for="times">'+this._txt('interval')+'</label><select id="times"><option value="default">'+this._txt('daily')+'</option><option value="1-2">1–2 Minuten</option><option value="3-8">3–8 Minuten</option><option value="5-10">5–10 Minuten</option><option value="10-20">10–20 Minuten</option></select></div><div class="note">'+this._txt('defaultHint')+'</div></ha-card>';
+   this.shadowRoot.innerHTML='<style>'+CSS+'</style><ha-card><div class="top"><span class="mark">🎅</span><div class="heading"><div class="title"></div><div class="subtitle">'+this._txt('subtitle')+'</div></div><div class="status"><span class="dot"></span><span class="status-text"></span></div></div><div class="buttons"><button id="toggle" type="button"></button><button id="sound" type="button"></button><button id="test" type="button">'+this._txt('test')+'</button><a class="kofi" href="https://ko-fi.com/Frankys_Stuff" target="_blank" rel="noopener noreferrer">'+this._txt('coffee')+'</a></div><div class="detail"><label for="times">'+this._txt('interval')+'</label><select id="times"><option value="default">'+this._txt('daily')+'</option><option value="1-2">1–2 Minuten</option><option value="3-8">3–8 Minuten</option><option value="5-10">5–10 Minuten</option><option value="10-20">10–20 Minuten</option></select></div><div class="note">'+this._txt('defaultHint')+'</div></ha-card>';
    this.shadowRoot.querySelector('.title').textContent=this._config.title;
    var self=this;
    this.shadowRoot.getElementById('toggle').onclick=function(){self._state.enabled=!self._state.enabled;self._save();self._update();if(!self._state.enabled)self._stop();self._applySchedule();};
