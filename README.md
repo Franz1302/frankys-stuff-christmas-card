@@ -16,6 +16,7 @@ Designed for **one monitor** — no helpers, automations, Browser Mod, or cloud 
 - 🎅 Santa's joyful **“Ho Ho Hooo”** and 🔔 gently jingling sleigh bells, both included
 - 🎲 **1–10 randomly scheduled flights per day** between **09:00 and 22:00 by default**, or optional 1–2, 3–8, 5–10, 10–20 minute intervals
 - 🕘 **Customizable daily flight hours** right in the card (start/end), applying to both schedule modes
+- 📐 **Responsive card layout** with Home Assistant Sections drag-resizing, minimum usable button size, and a built-in **visual card editor**
 - 🎛️ On/off, sound and instant **Test flight** controls, available even outside those hours
 - 🌍 English and German, following Home Assistant's language
 - 📺 Built-in illustrated fallback for browsers without transparent WebM support
@@ -47,11 +48,20 @@ duration: 10
 width_percent: 60
 sound_volume: 0.55
 bells_volume: 0.78
+layout_mode: auto # auto | compact | comfortable
 schedule_start: "09:00"
 schedule_end: "22:00"
 ```
 
 Set `video`, `ios_video`, `sound`, `bells`, or `fallback` to a local `/local/` URL to override the bundled media. Set `video: false`, `sound: false` or `bells: false` to disable that asset individually.
+
+## Visual editor and resizing
+
+Choose **Edit dashboard → Franky's Christmas Card → Edit** to open the graphical editor. You can adjust the card title, layout density (**Auto**, **Compact** or **Comfortable**), daily start/end times, flight duration, sleigh size and separate sound volumes. Optional custom media URLs are in the advanced section.
+
+In Home Assistant's **Sections** dashboard view, use the card's **Layout / size** controls to resize its width. The card advertises a default width of 12 grid columns and a minimum of 6 columns; its height automatically follows the number of wrapped controls. Buttons remain at least 44px high. In legacy Masonry dashboards, card width is controlled by the dashboard column rather than manually dragged.
+
+All three visual styles automatically adapt to available space, including portrait tablets. The flying animation size (`width_percent`) is a **separate** setting from the card's width.
 
 ## Scheduling
 
