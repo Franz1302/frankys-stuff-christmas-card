@@ -1,0 +1,40 @@
+name: Publish v0.2.4 (responsive visual editor)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-v024.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JavaScript, editor and bundled media
+        run: |
+          node --check dist/frankys-christmas-card.js
+          node tests/editor.test.cjs
+          test -s dist/sleigh.webm
+          test -s dist/sleigh-ipad.webp
+          test -s dist/santa.mp3
+          test -s dist/bells.mp3
+          test -s assets/preview.jpg
+      - name: Validate HACS
+        uses: hacs/action@main
+        with:
+          category: plugin
+      - name: Publish v0.2.4 once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v0.2.4 >/dev/null 2>&1; then
+            echo "v0.2.4 already exists. Nothing to do."
+            exit 0
+          fi
+          gh release create v0.2.4 \
+            --target "$GITHUB_SHA" \
+            --title "Franky's Christmas Card v0.2.4" \
+            --notes-file RELEASE_NOTES_V024.md \
+            --latest
