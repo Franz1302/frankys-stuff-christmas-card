@@ -14,8 +14,9 @@ Designed for **one monitor** — no helpers, automations, Browser Mod, or cloud 
 - 🛷 Animated 3D Santa sleigh with reindeer, supplied as a transparent WebM
 - ✨ Golden stardust trail
 - 🎅 Santa's joyful **“Ho Ho Hooo”** and 🔔 gently jingling sleigh bells, both included
-- 🎲 **1–10 randomly scheduled flights per day** (default), or 1–2, 3–8, 5–10, 10–20 minute intervals
-- 🎛️ On/off, sound and instant **Test flight** controls
+- 🎲 **1–10 randomly scheduled flights per day** between **09:00 and 22:00 by default**, or optional 1–2, 3–8, 5–10, 10–20 minute intervals
+- 🕘 **Customizable daily flight hours** right in the card (start/end), applying to both schedule modes
+- 🎛️ On/off, sound and instant **Test flight** controls, available even outside those hours
 - 🌍 English and German, following Home Assistant's language
 - 📺 Built-in illustrated fallback for browsers without transparent WebM support
 
@@ -46,15 +47,17 @@ duration: 10
 width_percent: 60
 sound_volume: 0.55
 bells_volume: 0.78
+schedule_start: "09:00"
+schedule_end: "22:00"
 ```
 
 Set `video`, `ios_video`, `sound`, `bells`, or `fallback` to a local `/local/` URL to override the bundled media. Set `video: false`, `sound: false` or `bells: false` to disable that asset individually.
 
 ## Scheduling
 
-The default selects a random integer from **1 to 10** and schedules that many flyovers across the local day. The daily plan and preferences are kept **in each browser**. Visits missed while the dashboard is closed or hidden are skipped, not queued. Manual **Test flight** never uses the daily quota.
+The default selects a random integer from **1 to 10** and schedules that many flyovers between **09:00 and 22:00** in the browser's local time zone. Each user can change **From / Until** directly in the card, or provide `schedule_start` and `schedule_end` in YAML (24-hour `HH:MM`, start must be before end). The daily plan and preferences are kept **in each browser**. Visits missed while the dashboard is closed or hidden are skipped, not queued. Manual **Test flight** works at any hour and never uses the daily quota.
 
-Selecting a minute interval replaces daily mode on that display. Each enabled display has an independent schedule; this card deliberately does **not** synchronize your whole house.
+Selecting a minute interval replaces daily mode on that display, but **still respects the same start/end times**. Each enabled display has an independent schedule; this card deliberately does **not** synchronize your whole house.
 
 ## Compatibility
 
