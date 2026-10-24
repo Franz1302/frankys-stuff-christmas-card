@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.3 — Quiet hours / configurable flight hours
+- Automatic flights only between 09:00 and 22:00 by default (local display time)
+- Start and end time editable in the card and via YAML (`schedule_start`, `schedule_end`)
+- Existing 1–10 random flights/day and optional minute intervals both honor the time window
+- Manual Test flight works even outside the scheduled time window
+- Existing audio, media formats, Ko-fi button and saved settings retained
+
 ## v0.2.2 — iOS display compatibility
 - Automatic Safari/iOS animated WebP with clean alpha, original WebM on other browsers
 - Original video, stardust, bells, Santa voice and scheduling unchanged
