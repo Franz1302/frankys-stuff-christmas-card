@@ -1,4 +1,4 @@
-/* Franky's Christmas Card v0.2.3 public beta — HACS default cinematic video + de/en strings — standalone Home Assistant Lovelace card
+/* Franky's Christmas Card v0.2.4 public beta — HACS default cinematic video + de/en strings — standalone Home Assistant Lovelace card
  * One monitor; no helpers, automations, Browser Mod, or cloud services required.
  * Bundled WebM/WebP and audio files are installed with HACS; individual asset URLs can be overridden.
  */
@@ -148,7 +148,8 @@ var CSS = ':host{display:block}ha-card{padding:16px 18px;color:var(--primary-tex
 '.buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.buttons button{border:1px solid rgba(125,161,193,.45);border-radius:10px;background:rgba(50,103,142,.15);color:inherit;cursor:pointer;padding:10px 13px;font:inherit;font-size:13px;min-height:38px}.buttons button.active{background:#12678d;color:white;border-color:#27b7e9}.buttons button:focus-visible{outline:2px solid #22bee6;outline-offset:2px}'+
 '.buttons a.kofi{display:inline-flex;align-items:center;text-decoration:none;background:#ff5e5b;color:#fff;font-weight:700;border:1px solid #ff5e5b;border-radius:10px;padding:10px 13px;font-size:13px;min-height:38px;box-sizing:border-box}.buttons a.kofi:focus-visible{outline:2px solid #22bee6;outline-offset:2px}'+
 '.time-window{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;font-size:12px}.time-window input{width:88px;border:1px solid #7c919e;border-radius:8px;padding:6px;background:var(--card-background-color,#141b2a);color:var(--primary-text-color,#eef6fc);color-scheme:dark;font:inherit}'+
-'.detail{display:flex;align-items:center;gap:8px;font-size:12px;opacity:.85;margin-top:13px}.detail select{background:var(--card-background-color,#141b2a);color:inherit;border:1px solid #7c919e;border-radius:8px;padding:6px 7px;font:inherit}.note{font-size:11px;opacity:.65;margin-top:8px}';
+'.detail{display:flex;align-items:center;gap:8px;font-size:12px;opacity:.85;margin-top:13px}.detail select{background:var(--card-background-color,#141b2a);color:inherit;border:1px solid #7c919e;border-radius:8px;padding:6px 7px;font:inherit}.note{font-size:11px;opacity:.65;margin-top:8px}'+
+"\n/* Responsive card; HA section width changes independently of viewport width. */\nha-card{width:100%;min-width:0;max-width:100%;height:auto;container-type:inline-size;overflow:hidden}\n.top{flex-wrap:wrap;min-width:0}\n.heading{overflow-wrap:anywhere}\n.buttons{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,124px),1fr));gap:8px}\n.buttons button,.buttons a.kofi{display:flex;justify-content:center;align-items:center;min-width:0;width:100%;min-height:44px;box-sizing:border-box;white-space:normal;text-align:center;line-height:1.25;padding:8px 10px;overflow-wrap:break-word}\n.detail{flex-wrap:wrap;min-width:0;gap:8px}\n.detail select{flex:1 1 138px;min-width:0;max-width:100%;min-height:44px}\n.time-window{gap:8px;min-width:0}\n.time-window strong{flex-basis:100%}\n.time-window label{white-space:nowrap}\n.time-window input{flex:1 1 88px;min-width:0;max-width:140px;min-height:44px;box-sizing:border-box}\n.note{line-height:1.45}\nha-card[data-layout=\"compact\"]{padding:10px 12px}\nha-card[data-layout=\"compact\"] .subtitle,ha-card[data-layout=\"compact\"] .note{display:none}\nha-card[data-layout=\"compact\"] .top{gap:6px}\nha-card[data-layout=\"compact\"] .mark{font-size:23px}\nha-card[data-layout=\"compact\"] .buttons{margin-top:10px}\nha-card[data-layout=\"compact\"] .detail{margin-top:9px}\nha-card[data-layout=\"compact\"] .time-window{margin-top:8px}\nha-card[data-layout=\"comfortable\"]{padding:22px 24px}\nha-card[data-layout=\"comfortable\"] .buttons{gap:12px}\n@container (max-width:319px){\n .buttons{grid-template-columns:1fr 1fr;gap:6px}\n .buttons button,.buttons a.kofi{font-size:12px;padding:8px 5px;min-height:44px}\n .top .status{width:100%}\n .time-window input{max-width:100%;flex-basis:94px}\n .detail select{flex-basis:100%}\n ha-card[data-layout=\"comfortable\"]{padding:12px}\n}\n@container (max-width:225px){\n .buttons{grid-template-columns:1fr}\n .time-window input{flex-basis:100%}\n}\n";
 
 class FrankysChristmasCard extends HTMLElement {
  constructor() {
@@ -162,10 +163,12 @@ class FrankysChristmasCard extends HTMLElement {
  }
  setConfig(raw) {
    if(!raw||typeof raw!=='object')throw new Error('Frankys Christmas: card configuration missing');
+   var previousConfig=this._config;
    var min=finite(raw.interval_min,3,1,120),max=finite(raw.interval_max,8,1,120);
    if(max<min)max=min;
    this._config={
      title:typeof raw.title==='string'?raw.title:"Franky's Christmas",
+     layout_mode:['auto','compact','comfortable'].indexOf(raw.layout_mode)!==-1?raw.layout_mode:'auto',
      video:raw.video===false||raw.video===null?'':(cleanUrl(raw.video)||HACS_VIDEO),
      ios_video:raw.ios_video===false||raw.ios_video===null?'':(cleanUrl(raw.ios_video)||((typeof raw.video==='string'&&cleanUrl(raw.video))?'':HACS_IOS_VIDEO)),
      sound:raw.sound===false||raw.sound===null?'':(cleanUrl(raw.sound)||HACS_SOUND),
@@ -184,7 +187,17 @@ class FrankysChristmasCard extends HTMLElement {
    if(timeMinutes(this._config.schedule_start)>=timeMinutes(this._config.schedule_end)){
      this._config.schedule_start='09:00';this._config.schedule_end='22:00';
    }
-   this._readState();this._render();
+   this._readState();
+   /* A visual-editor time change must take precedence over a previously saved
+      local time-window, while preserving user settings on ordinary refreshes. */
+   if(previousConfig && (previousConfig.schedule_start!==this._config.schedule_start ||
+      previousConfig.schedule_end!==this._config.schedule_end)){
+     this._state.start_time=this._config.schedule_start;
+     this._state.end_time=this._config.schedule_end;
+     this._save();
+     try{localStorage.removeItem(this._key()+'-daily-plan');}catch(ignore){}
+   }
+   this._render();
    if(this.isConnected)this._applySchedule();
  }
  connectedCallback() {
@@ -222,7 +235,9 @@ class FrankysChristmasCard extends HTMLElement {
    var dict=this._lang==='de'?de:en;
    return dict[id]||id;
  }
-  getCardSize(){return 2;}
+  getCardSize(){return this._config&&this._config.layout_mode==='compact'?4:6;}
+ getGridOptions(){return {columns:12,min_columns:6,rows:'auto'};}
+ static getConfigElement(){return document.createElement('frankys-christmas-card-editor');}
  static getStubConfig(){return {type:'custom:frankys-christmas-card',interval_min:3,interval_max:8};}
  _key(){return 'frankys-christmas-v1-'+this._config.storage_key;}
  _readState(){
@@ -241,7 +256,7 @@ class FrankysChristmasCard extends HTMLElement {
  _save(){try{localStorage.setItem(this._key(),JSON.stringify(this._state));}catch(e){}}
  _render(){
    if(!this.shadowRoot||!this._config)return;
-   this.shadowRoot.innerHTML='<style>'+CSS+'</style><ha-card><div class="top"><span class="mark">🎅</span><div class="heading"><div class="title"></div><div class="subtitle">'+this._txt('subtitle')+'</div></div><div class="status"><span class="dot"></span><span class="status-text"></span></div></div><div class="buttons"><button id="toggle" type="button"></button><button id="sound" type="button"></button><button id="test" type="button">'+this._txt('test')+'</button><a class="kofi" href="https://ko-fi.com/Frankys_Stuff" target="_blank" rel="noopener noreferrer">'+this._txt('coffee')+'</a></div><div class="detail"><label for="times">'+this._txt('interval')+'</label><select id="times"><option value="default">'+this._txt('daily')+'</option><option value="1-2">1–2 Minuten</option><option value="3-8">3–8 Minuten</option><option value="5-10">5–10 Minuten</option><option value="10-20">10–20 Minuten</option></select></div><div class="time-window"><strong>'+this._txt('hours')+'</strong><label for="from">'+this._txt('from')+'</label><input id="from" type="time"><label for="to">'+this._txt('to')+'</label><input id="to" type="time"></div><div class="note">'+this._txt('defaultHint')+'</div></ha-card>';
+   this.shadowRoot.innerHTML='<style>'+CSS+'</style><ha-card data-layout="'+this._config.layout_mode+'"><div class="top"><span class="mark">🎅</span><div class="heading"><div class="title"></div><div class="subtitle">'+this._txt('subtitle')+'</div></div><div class="status"><span class="dot"></span><span class="status-text"></span></div></div><div class="buttons"><button id="toggle" type="button"></button><button id="sound" type="button"></button><button id="test" type="button">'+this._txt('test')+'</button><a class="kofi" href="https://ko-fi.com/Frankys_Stuff" target="_blank" rel="noopener noreferrer">'+this._txt('coffee')+'</a></div><div class="detail"><label for="times">'+this._txt('interval')+'</label><select id="times"><option value="default">'+this._txt('daily')+'</option><option value="1-2">1–2 Minuten</option><option value="3-8">3–8 Minuten</option><option value="5-10">5–10 Minuten</option><option value="10-20">10–20 Minuten</option></select></div><div class="time-window"><strong>'+this._txt('hours')+'</strong><label for="from">'+this._txt('from')+'</label><input id="from" type="time"><label for="to">'+this._txt('to')+'</label><input id="to" type="time"></div><div class="note">'+this._txt('defaultHint')+'</div></ha-card>';
    this.shadowRoot.querySelector('.title').textContent=this._config.title;
    var self=this;
    this.shadowRoot.getElementById('toggle').onclick=function(){self._state.enabled=!self._state.enabled;self._save();self._update();if(!self._state.enabled)self._stop();self._applySchedule();};
@@ -434,9 +449,88 @@ class FrankysChristmasCard extends HTMLElement {
    var self=this;this._raf=requestAnimationFrame(function(t){self._dust(t,vehicle);});
  }
 }
+
+/* HA graphical editor: no extra frontend dependencies, works in the card picker. */
+class FrankysChristmasCardEditor extends HTMLElement {
+ constructor(){
+   super();
+   this.attachShadow({mode:'open'});
+   this._config=null;
+   this._lang=/^de(?:-|$)/i.test(navigator.language||'')?'de':'en';
+ }
+ set hass(hass){
+   var language=(hass&&hass.locale&&hass.locale.language)||(hass&&hass.language)||navigator.language||'en';
+   this._hass=hass;
+   var newLang=/^de(?:-|$)/i.test(language)?'de':'en';
+   if(newLang!==this._lang){this._lang=newLang;if(this._config)this._render();}
+ }
+ setConfig(config){
+   if(!config)return;
+   this._config=Object.assign({},config);
+   this._lang=/^de(?:-|$)/i.test((this._hass&&((this._hass.locale&&this._hass.locale.language)||this._hass.language))||navigator.language||'en')?'de':'en';
+   this._render();
+ }
+ _render(){
+   var de=this._lang==='de';
+   var tr=(g,e)=>de?g:e;
+   var esc=(s)=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+   var c=this._config||{};
+   this.shadowRoot.innerHTML=
+    '<style>:host{display:block;color:var(--primary-text-color);font-size:14px}fieldset{border:1px solid var(--divider-color,#63748a);border-radius:10px;margin:0 0 12px;padding:12px}legend{font-weight:700;padding:0 7px}.field{display:flex;flex-direction:column;gap:5px;margin:9px 0}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.pair .field{min-width:0}label{font-size:13px;font-weight:600}input,select{font:inherit;padding:9px 10px;min-width:0;max-width:100%;width:100%;box-sizing:border-box;border:1px solid var(--divider-color,#798896);background:var(--card-background-color,#19232f);color:var(--primary-text-color,#fff);border-radius:8px;color-scheme:light dark;min-height:42px}input[type=range]{padding:0;min-height:35px;accent-color:var(--primary-color,#03a9f4)}small{display:block;opacity:.75;line-height:1.5}details{margin-top:10px}summary{cursor:pointer;font-weight:600;padding:9px 0}.invalid{color:var(--error-color,#f86d6d);min-height:1em;font-size:12px;margin-top:6px}@media(max-width:350px){.pair{grid-template-columns:1fr}}</style>'+
+    '<fieldset><legend>'+tr('Darstellung','Appearance')+'</legend>'+
+    '<div class="field"><label for="title">'+tr('Kartentitel','Card title')+'</label><input id="title" data-field="title" type="text" value="'+esc(c.title||"Franky's Christmas")+'"></div>'+
+    '<div class="field"><label for="layout_mode">'+tr('Layout','Layout')+'</label><select id="layout_mode" data-field="layout_mode">'+
+    ['auto','compact','comfortable'].map((value)=>'<option value="'+value+'"'+((c.layout_mode||'auto')===value?' selected':'')+'>'+({auto:tr('Automatisch (empfohlen)','Auto (recommended)'),compact:tr('Kompakt','Compact'),comfortable:tr('Großzügig','Comfortable')}[value])+'</option>').join('')+'</select></div>'+
+    '<small>'+tr('Im Abschnitt-Dashboard kannst du die Karte zusätzlich über die Größensteuerung ziehen. Buttons bleiben mindestens 44 px hoch.','In a Sections dashboard you can also resize the card. Buttons stay at least 44 px high.')+'</small></fieldset>'+
+    '<fieldset><legend>'+tr('Flugzeiten','Flight hours')+'</legend><div class="pair">'+
+    '<div class="field"><label for="schedule_start">'+tr('Von','From')+'</label><input id="schedule_start" data-field="schedule_start" type="time" value="'+esc(c.schedule_start||'09:00')+'"></div>'+
+    '<div class="field"><label for="schedule_end">'+tr('Bis','Until')+'</label><input id="schedule_end" data-field="schedule_end" type="time" value="'+esc(c.schedule_end||'22:00')+'"></div></div>'+
+    '<small>'+tr('Gilt für beide Automatikmodi. Manuelle Testflüge sind jederzeit möglich.','Applies to both automatic modes. Manual test flights work at any hour.')+'</small><div id="warning" class="invalid" role="status"></div></fieldset>'+
+    '<fieldset><legend>'+tr('Animation und Lautstärke','Animation and volume')+'</legend>'+
+    '<div class="field"><label for="duration">'+tr('Flugdauer (Sekunden)','Flight duration (seconds)')+': <output id="duration-value">'+esc(c.duration==null?10:c.duration)+'</output></label><input id="duration" data-field="duration" type="range" min="4" max="30" step="1" value="'+esc(c.duration==null?10:c.duration)+'"></div>'+
+    '<div class="field"><label for="width_percent">'+tr('Schlittengröße (% der Bildschirmbreite)','Sleigh size (% of screen width)')+': <output id="width_percent-value">'+esc(c.width_percent==null?60:c.width_percent)+'</output></label><input id="width_percent" data-field="width_percent" type="range" min="20" max="95" step="5" value="'+esc(c.width_percent==null?60:c.width_percent)+'"></div>'+
+    '<div class="pair"><div class="field"><label for="sound_volume">'+tr('Santa-Lautstärke','Santa volume')+'</label><input id="sound_volume" data-field="sound_volume" type="range" min="0" max="1" step="0.05" value="'+esc(c.sound_volume==null?.55:c.sound_volume)+'"></div>'+
+    '<div class="field"><label for="bells_volume">'+tr('Glöckchen-Lautstärke','Bells volume')+'</label><input id="bells_volume" data-field="bells_volume" type="range" min="0" max="1" step="0.05" value="'+esc(c.bells_volume==null?.78:c.bells_volume)+'"></div></div></fieldset>'+
+    '<details><summary>'+tr('Erweitert: eigene Mediendateien','Advanced: custom media files')+'</summary>'+
+    [['video',tr('WebM-Video','WebM video')],['ios_video',tr('iPad-Animation (WebP)','iPad animation (WebP)')],['sound',tr('Santa-Ton','Santa audio')],['bells',tr('Glöckchen','Bells')],['fallback',tr('Ersatzbild','Fallback image')]].map((p)=>'<div class="field"><label for="'+p[0]+'">'+p[1]+'</label><input type="text" data-field="'+p[0]+'" id="'+p[0]+'" placeholder="'+tr('Mitgelieferte Datei verwenden','Use bundled asset')+'" value="'+esc(typeof c[p[0]]==='string'?c[p[0]]:'')+'"></div>').join('')+
+    '</details>';
+   var self=this;
+   this.shadowRoot.querySelectorAll('[data-field]').forEach(function(el){
+     if(el.type==='range'){
+       el.oninput=function(){var out=self.shadowRoot.getElementById(el.id+'-value');if(out)out.textContent=el.value;};
+     }
+     el.onchange=function(){self._changed(el);};
+   });
+ }
+ _changed(el){
+   var key=el.getAttribute('data-field'),value=el.value;
+   var warning=this.shadowRoot.getElementById('warning');
+   if(warning)warning.textContent='';
+   if(key==='schedule_start'||key==='schedule_end'){
+     var st=key==='schedule_start'?value:(this._config.schedule_start||'09:00');
+     var en=key==='schedule_end'?value:(this._config.schedule_end||'22:00');
+     if(!/^\d{2}:\d{2}$/.test(value)||timeMinutes(st)>=timeMinutes(en)){
+       if(warning)warning.textContent=this._lang==='de'?'Beginn muss vor dem Ende liegen.':'Start must be before end.';
+       el.value=key==='schedule_start'?(this._config.schedule_start||'09:00'):(this._config.schedule_end||'22:00');
+       return;
+     }
+   }
+   var next=Object.assign({},this._config);
+   if(['duration','width_percent','sound_volume','bells_volume'].indexOf(key)!==-1)value=Number(value);
+   if(key==='title'&&!value.trim())value="Franky's Christmas";
+   if(['video','ios_video','sound','bells','fallback'].indexOf(key)!==-1&&!value.trim())delete next[key];
+   else if(key==='layout_mode'&&['auto','compact','comfortable'].indexOf(value)===-1)next[key]='auto';
+   else next[key]=value;
+   if(next[key]===this._config[key])return;
+   this._config=next;
+   this.dispatchEvent(new CustomEvent('config-changed',{detail:{config:next},bubbles:true,composed:true}));
+ }
+}
+
+customElements.define('frankys-christmas-card-editor',FrankysChristmasCardEditor);
 customElements.define('frankys-christmas-card',FrankysChristmasCard);
 window.customCards=window.customCards||[];
 if(!window.customCards.some(function(x){return x.type==='frankys-christmas-card';})){
- window.customCards.push({type:'frankys-christmas-card',name:"Franky's Christmas Card",description:'Standalone Christmas overlay for one dashboard display; local interval and media.'});
+ window.customCards.push({type:'frankys-christmas-card',name:"Franky's Christmas Card",description:'Responsive Christmas overlay with a visual editor, local schedules and bundled media.'});
 }
 })();
