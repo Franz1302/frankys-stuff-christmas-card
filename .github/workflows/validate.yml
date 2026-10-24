@@ -14,6 +14,7 @@ jobs:
       - name: Ensure bundled assets are present
         run: |
           test -s dist/sleigh.webm
+          test -s dist/sleigh-ipad.webp
           test -s dist/santa.mp3
           test -s dist/bells.mp3
           test -s assets/preview.jpg
