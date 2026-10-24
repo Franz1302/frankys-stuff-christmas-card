@@ -1,0 +1,39 @@
+name: Publish v0.2.2 when iPad animation is uploaded
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dist/sleigh-ipad.webp"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify all bundled files and JavaScript syntax
+        run: |
+          node --check dist/frankys-christmas-card.js
+          test -s dist/sleigh-ipad.webp
+          test -s dist/sleigh.webm
+          test -s dist/santa.mp3
+          test -s dist/bells.mp3
+          test -s assets/preview.jpg
+      - name: Validate HACS
+        uses: hacs/action@main
+        with:
+          category: plugin
+      - name: Create v0.2.2 only if absent
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v0.2.2 >/dev/null 2>&1; then
+            echo "Release already exists, no duplicate."
+            exit 0
+          fi
+          gh release create v0.2.2 \
+            --target "$GITHUB_SHA" \
+            --title "Franky's Christmas Card v0.2.2" \
+            --notes-file RELEASE_NOTES_V022.md \
+            --latest
