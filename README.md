@@ -1,0 +1,84 @@
+# 🎅 Franky's Christmas Card
+
+**A cinematic Christmas sleigh that flies across your Home Assistant dashboard.**
+Designed for **one monitor** — no helpers, automations, Browser Mod, or cloud accounts needed.
+
+![Franky's Christmas Card preview](assets/preview.jpg)
+
+[☕ Support Franky's Stuff on Ko-fi](https://ko-fi.com/Frankys_Stuff)
+
+## What you get
+
+- 🛷 Animated 3D Santa sleigh with reindeer, supplied as a transparent WebM
+- ✨ Golden stardust trail
+- 🎅 Santa's joyful **“Ho Ho Hooo”** and 🔔 gently jingling sleigh bells, both included
+- 🎲 **1–10 randomly scheduled flights per day** (default), or 1–2, 3–8, 5–10, 10–20 minute intervals
+- 🎛️ On/off, sound and instant **Test flight** controls
+- 🌍 English and German, following Home Assistant's language
+- 📺 Built-in illustrated fallback for browsers without transparent WebM support
+
+## Install with HACS
+
+1. Open **HACS** → **Custom repositories**.
+2. Add `https://github.com/Franz1302/frankys-stuff-christmas-card` as a **Dashboard** repository.
+3. Install **Franky's Christmas Card**.
+4. Refresh Home Assistant, then **Edit dashboard → Add card**.
+5. Choose **Franky's Christmas Card**, click **Test flight** and **Enable** when ready.
+
+The video and the audio are installed together with the JavaScript from the repository's `dist/` folder. No extra files, helpers or automations to install.
+
+### Minimal YAML
+
+```yaml
+type: custom:frankys-christmas-card
+```
+
+The card is initially **disabled** on each monitor. Enabling the card makes it run its own local schedule; **Sound on/off** controls its audio. Browsers may require one user interaction before they permit automatic sound playback.
+
+### Optional configuration
+
+```yaml
+type: custom:frankys-christmas-card
+title: "Franky's Christmas"
+duration: 10
+width_percent: 60
+sound_volume: 0.55
+bells_volume: 0.78
+```
+
+Set `video`, `sound`, `bells`, or `fallback` to a local `/local/` URL to override the bundled media. Set `video: false`, `sound: false` or `bells: false` to disable that asset individually.
+
+## Scheduling
+
+The default selects a random integer from **1 to 10** and schedules that many flyovers across the local day. The daily plan and preferences are kept **in each browser**. Visits missed while the dashboard is closed or hidden are skipped, not queued. Manual **Test flight** never uses the daily quota.
+
+Selecting a minute interval replaces daily mode on that display. Each enabled display has an independent schedule; this card deliberately does **not** synchronize your whole house.
+
+## Compatibility
+
+The video is a transparent WebM (VP9 with alpha). Older iPads and Fire tablets may show the illustrated fallback instead. Autoplay sound may require interaction on browsers such as Silk and Safari.
+
+## Installation without HACS
+
+Copy all files from `dist/` into `/config/www/frankys-christmas-card/`. Register `/local/frankys-christmas-card/frankys-christmas-card.js` as a JavaScript module in Home Assistant's Dashboard Resources, and override the default paths:
+
+```yaml
+type: custom:frankys-christmas-card
+video: /local/frankys-christmas-card/sleigh.webm
+sound: /local/frankys-christmas-card/santa.mp3
+bells: /local/frankys-christmas-card/bells.mp3
+```
+
+## Credits and license
+
+**Code:** MIT © 2026 Franky's Stuff — see [LICENSE](LICENSE).
+
+**Artwork:** The bundled sleigh animation was created and prepared for this project by the author. It is licensed for use as part of this project, not standalone resale or redistribution — see [ASSET_LICENSE.md](ASSET_LICENSE.md).
+
+**Audio:** “Ho Ho Ho” by **cartoon_music** and “Bells Jingling 2” by **DRAGON-STUDIO**, used as part of this combined Christmas animation under the [Pixabay Content License](https://pixabay.com/service/terms/). The bells track has been gain-adjusted and blended in the animation. The sounds are included **only as components of this creative project**, not offered as independent sound-effect downloads, and are **not MIT-licensed**. Do not extract or redistribute either audio file on a standalone basis.
+
+Feedback and issues: https://github.com/Franz1302/frankys-stuff-christmas-card/issues
+
+☕ **[Thanks for the coffee! Support on Ko-fi](https://ko-fi.com/Frankys_Stuff)**
+
+*Beta release — browser-specific feedback welcome.*
