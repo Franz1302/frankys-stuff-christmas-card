@@ -1,7 +1,7 @@
 # 🎅 Franky's Christmas Card
 
 **A cinematic Christmas sleigh that flies across your Home Assistant dashboard.**
-Designed for **one monitor** — no helpers, automations, Browser Mod, or cloud accounts needed.
+Runs **on each configured display, across its dashboard views** — no helpers, automations, Browser Mod, or cloud accounts needed.
 
 [![☕ Thanks for Coffee — Support Franky's Stuff](https://img.shields.io/badge/%E2%98%95_Thanks_for_Coffee-Support_Franky's_Stuff-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/Frankys_Stuff)
 
