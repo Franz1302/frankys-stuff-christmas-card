@@ -244,7 +244,7 @@ class FrankysChristmasCard extends HTMLElement {
    var de={
      subtitle:'Weihnachtsflug · alle Dashboard-Ansichten',
      test:'🛷 Testflug',coffee:'☕ Danke für den Kaffee',interval:'Flugintervall',
-     daily:'1–10 Flüge/Tag (Standard)',hours:'Flugzeiten',from:'Von',to:'Bis',defaultHint:'Automatisch nur innerhalb der eingestellten Uhrzeiten; Testflug jederzeit möglich.',
+     daily:'1–10 Flüge/Tag (Standard)',hourly:'Jede volle Stunde',hours:'Flugzeiten',from:'Von',to:'Bis',defaultHint:'Automatisch nur innerhalb der eingestellten Uhrzeiten; Testflug jederzeit möglich.',
      turnOn:'▶ Einschalten',turnOff:'⏸ Ausschalten',
      soundOn:'🔊 Ton an',soundOff:'🔇 Ton aus',
      active:'AKTIV',inactive:'AUS'
@@ -252,7 +252,7 @@ class FrankysChristmasCard extends HTMLElement {
    var en={
      subtitle:'Christmas flight · all dashboard views',
      test:'🛷 Test flight',coffee:'☕ Thanks for Coffee',interval:'Flight schedule',
-     daily:'1–10 flights/day (default)',hours:'Flight hours',from:'From',to:'Until',defaultHint:'Automatic flights only during your chosen hours; manual test flight works anytime.',
+     daily:'1–10 flights/day (default)',hourly:'Every full hour',hours:'Flight hours',from:'From',to:'Until',defaultHint:'Automatic flights only during your chosen hours; manual test flight works anytime.',
      turnOn:'▶ Enable',turnOff:'⏸ Disable',
      soundOn:'🔊 Sound on',soundOff:'🔇 Sound off',
      active:'ON',inactive:'OFF'
@@ -269,7 +269,7 @@ class FrankysChristmasCard extends HTMLElement {
    var data=null;try{data=JSON.parse(localStorage.getItem(this._key())||'null');}catch(e){}
    this._state={
      enabled:!!(data&&data.enabled),sound:!!(data&&data.sound),
-     interval:(data&&['3-8','5-10','10-20','1-2'].indexOf(data.interval)!==-1)?data.interval:'',
+     interval:(data&&['3-8','5-10','10-20','1-2','hourly'].indexOf(data.interval)!==-1)?data.interval:'',
      start_time:parseTime(data&&data.start_time,this._config.schedule_start),
      end_time:parseTime(data&&data.end_time,this._config.schedule_end)
    };
@@ -281,11 +281,11 @@ class FrankysChristmasCard extends HTMLElement {
  _save(){try{localStorage.setItem(this._key(),JSON.stringify(this._state));}catch(e){}}
  _render(){
    if(!this.shadowRoot||!this._config)return;
-   this.shadowRoot.innerHTML='<style>'+CSS+'</style><ha-card data-layout="'+this._config.layout_mode+'"><div class="top"><span class="mark">🎅</span><div class="heading"><div class="title"></div><div class="subtitle">'+this._txt('subtitle')+'</div></div><div class="status"><span class="dot"></span><span class="status-text"></span></div></div><div class="buttons"><button id="toggle" type="button"></button><button id="sound" type="button"></button><button id="test" type="button">'+this._txt('test')+'</button><a class="kofi" href="https://ko-fi.com/Frankys_Stuff" target="_blank" rel="noopener noreferrer">'+this._txt('coffee')+'</a></div><div class="detail"><label for="times">'+this._txt('interval')+'</label><select id="times"><option value="default">'+this._txt('daily')+'</option><option value="1-2">1–2 Minuten</option><option value="3-8">3–8 Minuten</option><option value="5-10">5–10 Minuten</option><option value="10-20">10–20 Minuten</option></select></div><div class="time-window"><strong>'+this._txt('hours')+'</strong><label for="from">'+this._txt('from')+'</label><input id="from" type="time"><label for="to">'+this._txt('to')+'</label><input id="to" type="time"></div><div class="note">'+this._txt('defaultHint')+'</div></ha-card>';
+   this.shadowRoot.innerHTML='<style>'+CSS+'</style><ha-card data-layout="'+this._config.layout_mode+'"><div class="top"><span class="mark">🎅</span><div class="heading"><div class="title"></div><div class="subtitle">'+this._txt('subtitle')+'</div></div><div class="status"><span class="dot"></span><span class="status-text"></span></div></div><div class="buttons"><button id="toggle" type="button"></button><button id="sound" type="button"></button><button id="test" type="button">'+this._txt('test')+'</button><a class="kofi" href="https://ko-fi.com/Frankys_Stuff" target="_blank" rel="noopener noreferrer">'+this._txt('coffee')+'</a></div><div class="detail"><label for="times">'+this._txt('interval')+'</label><select id="times"><option value="default">'+this._txt('daily')+'</option><option value="hourly">'+this._txt('hourly')+'</option><option value="1-2">1–2 Minuten</option><option value="3-8">3–8 Minuten</option><option value="5-10">5–10 Minuten</option><option value="10-20">10–20 Minuten</option></select></div><div class="time-window"><strong>'+this._txt('hours')+'</strong><label for="from">'+this._txt('from')+'</label><input id="from" type="time"><label for="to">'+this._txt('to')+'</label><input id="to" type="time"></div><div class="note">'+this._txt('defaultHint')+'</div></ha-card>';
    this.shadowRoot.querySelector('.title').textContent=this._config.title;
    var self=this;
    this.shadowRoot.getElementById('toggle').onclick=function(){self._state.enabled=!self._state.enabled;self._save();self._update();if(!self._state.enabled)self._stop();self._applySchedule();};
-   this.shadowRoot.getElementById('sound').onclick=function(){self._state.sound=!self._state.sound;self._save();self._update();};
+   this.shadowRoot.getElementById('sound').onclick=function(){self._state.sound=!self._state.sound;self._save();self._update();self._applySchedule();};
    this.shadowRoot.getElementById('test').onclick=function(){self._play();};
    this.shadowRoot.getElementById('times').onchange=function(){self._state.interval=this.value==='default'?'':this.value;self._save();self._applySchedule();};
    function onHoursChange(){
@@ -364,6 +364,29 @@ class FrankysChristmasCard extends HTMLElement {
        var tomorrow=new Date(now);tomorrow.setHours(24,0,3,0);
        this._timer=setTimeout(function(){self._timer=0;self._applySchedule();},Math.max(1000,tomorrow.getTime()-nowMs));
      }
+     return;
+   }
+   /* Fixed hourly mode: one flight at the next full clock hour, never catch up. */
+   if(this._state.interval==='hourly'){
+     var nextHour=new Date(now);
+     nextHour.setMinutes(0,0,0);
+     if(nextHour.getTime()<=nowMs+500)nextHour.setHours(nextHour.getHours()+1);
+     for(var hourTry=0;hourTry<48;hourTry++){
+       var clockMinute=nextHour.getHours()*60;
+       var windowEnd=new Date(nextHour);
+       windowEnd.setHours(b[0],b[1],0,0);
+       if(clockMinute>=timeMinutes(this._state.start_time)&&
+          clockMinute<timeMinutes(this._state.end_time)&&
+          nextHour.getTime()+this._config.duration*1000<=windowEnd.getTime())break;
+       nextHour.setHours(nextHour.getHours()+1);
+     }
+     /* Narrow time windows may contain no full hour. */
+     if(hourTry===48)return;
+     this._timer=setTimeout(function(){
+       self._timer=0;
+       if(self._state.enabled&&!document.hidden&&self._withinWindow())self._play();
+       self._applySchedule();
+     },Math.max(100,nextHour.getTime()-nowMs));
      return;
    }
    /* Minute modes also respect the active-time window. */
