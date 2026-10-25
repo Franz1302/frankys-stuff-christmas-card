@@ -14,8 +14,8 @@ Designed for **one monitor** — no helpers, automations, Browser Mod, or cloud 
 - 🛷 Animated 3D Santa sleigh with reindeer, supplied as a transparent WebM
 - ✨ Golden stardust trail
 - 🎅 Santa's joyful **“Ho Ho Hooo”** and 🔔 gently jingling sleigh bells, both included
-- 🎲 **1–10 randomly scheduled flights per day** between **09:00 and 22:00 by default**, or optional 1–2, 3–8, 5–10, 10–20 minute intervals
-- 🕘 **Customizable daily flight hours** right in the card (start/end), applying to both schedule modes
+- 🎲 **1–10 randomly scheduled flights per day** between **09:00 and 22:00 by default**, optional 1–2, 3–8, 5–10, 10–20 minute intervals, or **fixed flights every full hour**
+- 🕘 **Customizable daily flight hours** right in the card (start/end), applying to all schedule modes
 - 📐 **Responsive card layout** with Home Assistant Sections drag-resizing, minimum usable button size, and a built-in **visual card editor**
 - 🎛️ On/off, sound and instant **Test flight** controls, available even outside those hours
 - 🌍 English and German, following Home Assistant's language
@@ -69,7 +69,7 @@ All three visual styles automatically adapt to available space, including portra
 
 The default selects a random integer from **1 to 10** and schedules that many flyovers between **09:00 and 22:00** in the browser's local time zone. Each user can change **From / Until** directly in the card, or provide `schedule_start` and `schedule_end` in YAML (24-hour `HH:MM`, start must be before end). The daily plan and preferences are kept **in each browser**. Visits missed while the dashboard is closed or hidden are skipped, not queued. Manual **Test flight** works at any hour and never uses the daily quota.
 
-Selecting a minute interval replaces daily mode on that display, but **still respects the same start/end times**. Each enabled display has an independent schedule; this card deliberately does **not** synchronize your whole house.
+Selecting a minute interval replaces daily mode on that display, but **still respects the same start/end times**. Selecting **Every full hour** triggers at :00 (for example 09:00, 10:00, 11:00) during the configured hours instead of using random times; it skips missed flights and does not replay them. Windows containing no full hour cannot produce fixed-hour flights. Each enabled display has an independent schedule; this card deliberately does **not** synchronize your whole house.
 
 ## Compatibility
 
