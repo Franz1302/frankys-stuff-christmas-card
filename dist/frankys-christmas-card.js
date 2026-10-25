@@ -1,4 +1,4 @@
-/* Franky's Christmas Card v0.2.4 public beta — HACS default cinematic video + de/en strings — standalone Home Assistant Lovelace card
+/* Franky's Christmas Card v0.2.5 — HACS default cinematic video + de/en strings — standalone Home Assistant Lovelace card
  * One monitor; no helpers, automations, Browser Mod, or cloud services required.
  * Bundled WebM/WebP and audio files are installed with HACS; individual asset URLs can be overridden.
  */
