@@ -142,6 +142,35 @@ function timeMinutes(value){
 function finite(n, fallback, min, max) {
   n=Number(n); return isFinite(n) ? Math.max(min,Math.min(max,n)) : fallback;
 }
+/* One page-wide scheduler, independent of card lifecycle. */
+var GLOBAL_CONFIG_KEY='frankys-christmas-v1-global-config';
+var globalFlightController=null;
+function getGlobalFlightController(){
+ if(globalFlightController)return globalFlightController;
+ globalFlightController=new FrankysChristmasCard();
+ globalFlightController._isGlobalFlightController=true;
+ document.addEventListener('visibilitychange',globalFlightController._onVisibility);
+ return globalFlightController;
+}
+function activateGlobalFlightController(card){
+ var ctrl=getGlobalFlightController();
+ if(ctrl._config&&ctrl._state&&
+    JSON.stringify(ctrl._config)===JSON.stringify(card._config)&&
+    JSON.stringify(ctrl._state)===JSON.stringify(card._state))return ctrl;
+ ctrl._config=Object.assign({},card._config);
+ ctrl._state=Object.assign({},card._state);
+ try{localStorage.setItem(GLOBAL_CONFIG_KEY,JSON.stringify(card._config));}catch(e){}
+ ctrl._applySchedule();
+ return ctrl;
+}
+function restoreGlobalFlightController(){
+ var saved=null;
+ try{saved=JSON.parse(localStorage.getItem(GLOBAL_CONFIG_KEY)||'null');}catch(e){}
+ if(!saved||typeof saved!=='object')return;
+ var ctrl=getGlobalFlightController();
+ ctrl.setConfig(saved);
+ ctrl._applySchedule();
+}
 var CSS = ':host{display:block}ha-card{padding:16px 18px;color:var(--primary-text-color,#eef6fc);background:var(--card-background-color,#141b2a);border-radius:16px;box-sizing:border-box}'+
 '.top{display:flex;align-items:center;gap:11px}.mark{font-size:28px;line-height:1}.heading{flex:1;min-width:0}.title{font-size:16px;font-weight:700}.subtitle{font-size:12px;opacity:.72;margin-top:3px}.status{font-size:12px;white-space:nowrap;color:var(--secondary-text-color,#aab)}'+
 '.dot{width:8px;height:8px;border-radius:50%;background:#8794a6;display:inline-block;margin-right:5px}.dot.on{background:#32c992;box-shadow:0 0 8px #32c992}'+
@@ -197,18 +226,14 @@ class FrankysChristmasCard extends HTMLElement {
      this._save();
      try{localStorage.removeItem(this._key()+'-daily-plan');}catch(ignore){}
    }
-   this._render();
+   if(!this._isGlobalFlightController)this._render();
    if(this.isConnected)this._applySchedule();
  }
  connectedCallback() {
-   if(!this._config)return;
-   document.addEventListener('visibilitychange',this._onVisibility);
-   this._applySchedule();
+   if(this._config)this._applySchedule();
  }
  disconnectedCallback() {
-   document.removeEventListener('visibilitychange',this._onVisibility);
-   this._clearSchedule();this._stop();
-   if(window.__FrankysChristmasStandaloneOwner===this)window.__FrankysChristmasStandaloneOwner=null;
+   /* The shared scheduler keeps running when Lovelace removes the card. */
  }
  set hass(hass){
    var lang=(hass&&hass.locale&&hass.locale.language)||(hass&&hass.language)||navigator.language||'en';
@@ -217,7 +242,7 @@ class FrankysChristmasCard extends HTMLElement {
  }
  _txt(id){
    var de={
-     subtitle:'Weihnachtsflug · nur dieser Bildschirm',
+     subtitle:'Weihnachtsflug · alle Dashboard-Ansichten',
      test:'🛷 Testflug',coffee:'☕ Danke für den Kaffee',interval:'Flugintervall',
      daily:'1–10 Flüge/Tag (Standard)',hours:'Flugzeiten',from:'Von',to:'Bis',defaultHint:'Automatisch nur innerhalb der eingestellten Uhrzeiten; Testflug jederzeit möglich.',
      turnOn:'▶ Einschalten',turnOff:'⏸ Ausschalten',
@@ -225,7 +250,7 @@ class FrankysChristmasCard extends HTMLElement {
      active:'AKTIV',inactive:'AUS'
    };
    var en={
-     subtitle:'Christmas flight · this screen only',
+     subtitle:'Christmas flight · all dashboard views',
      test:'🛷 Test flight',coffee:'☕ Thanks for Coffee',interval:'Flight schedule',
      daily:'1–10 flights/day (default)',hours:'Flight hours',from:'From',to:'Until',defaultHint:'Automatic flights only during your chosen hours; manual test flight works anytime.',
      turnOn:'▶ Enable',turnOff:'⏸ Disable',
@@ -300,13 +325,12 @@ class FrankysChristmasCard extends HTMLElement {
    return minute>=timeMinutes(this._state.start_time)&&minute<timeMinutes(this._state.end_time);
  }
  _applySchedule(){
-   this._clearSchedule();
-   if(!this.isConnected||!this._state||!this._state.enabled||document.hidden){
-     if(window.__FrankysChristmasStandaloneOwner===this)window.__FrankysChristmasStandaloneOwner=null;
+   if(!this._isGlobalFlightController){
+     if(this._config&&this._state)activateGlobalFlightController(this);
      return;
    }
-   if(window.__FrankysChristmasStandaloneOwner&&window.__FrankysChristmasStandaloneOwner!==this)return;
-   window.__FrankysChristmasStandaloneOwner=this;
+   this._clearSchedule();
+   if(!this._state||!this._state.enabled||document.hidden)return;
    var self=this,now=new Date(),nowMs=now.getTime();
    var start=new Date(now),end=new Date(now);
    var a=this._state.start_time.split(':').map(Number),b=this._state.end_time.split(':').map(Number);
@@ -358,6 +382,10 @@ class FrankysChristmasCard extends HTMLElement {
    },Math.max(100,when-nowMs));
  }
  _stop(){
+   if(!this._isGlobalFlightController){
+     if(globalFlightController)globalFlightController._stop();
+     return;
+   }
    this._alive=false;
    if(this._durationTimer)clearTimeout(this._durationTimer);this._durationTimer=0;
    if(this._soundTimer)clearTimeout(this._soundTimer);this._soundTimer=0;
@@ -369,6 +397,10 @@ class FrankysChristmasCard extends HTMLElement {
    this._stage=null;this._ctx=null;this._canvas=null;this._particles=[];
  }
  _play(){
+   if(!this._isGlobalFlightController){
+     if(!this._config||!this._state)return false;
+     return activateGlobalFlightController(this)._play();
+   }
    if(document.hidden||!document.body)return false;
    this._stop();
    var self=this, c=this._config;
@@ -529,6 +561,7 @@ class FrankysChristmasCardEditor extends HTMLElement {
 
 customElements.define('frankys-christmas-card-editor',FrankysChristmasCardEditor);
 customElements.define('frankys-christmas-card',FrankysChristmasCard);
+restoreGlobalFlightController();
 window.customCards=window.customCards||[];
 if(!window.customCards.some(function(x){return x.type==='frankys-christmas-card';})){
  window.customCards.push({type:'frankys-christmas-card',name:"Franky's Christmas Card",description:'Responsive Christmas overlay with a visual editor, local schedules and bundled media.'});
