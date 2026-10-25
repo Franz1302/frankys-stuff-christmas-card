@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const assert=require('node:assert/strict');
 const code=fs.readFileSync('dist/frankys-christmas-card.js','utf8');
-function browser(storage) {
+function browser(storage, fakeNow) {
   const registry={}, timers=new Map(), listeners={};
   let timerId=0;
   class FakeElement {
@@ -27,7 +27,11 @@ function browser(storage) {
     customElements:{get:key=>registry[key],define:(key,value)=>{registry[key]=value;}},
     setTimeout:(callback,ms)=>{timers.set(++timerId,{callback,ms});return timerId;},
     clearTimeout:id=>{timers.delete(id);},
-    CustomEvent:class{}
+    CustomEvent:class{},
+    Date: fakeNow ? class FrozenDate extends Date {
+      constructor(...args){if(args.length)super(...args);else super(fakeNow.getTime());}
+      static now(){return fakeNow.getTime();}
+    } : Date
   };
   vm.runInNewContext(code,context);
   const Card=registry['frankys-christmas-card'];
@@ -63,4 +67,35 @@ assert.equal(reloaded.timers.size,0,'Hidden browser must pause scheduler');
 reloaded.document.hidden=false;
 reloaded.listeners.visibilitychange();
 assert.equal(reloaded.timers.size,1,'Visible browser must resume scheduler');
-console.log('OK: Santa global scheduler, navigation, cold reload, visibility and no duplicate timers');
+// Fixed hourly mode fires at :00 (not after a random delay).
+function expectHourly(hour,minute,start,end,expectedMinutes) {
+  const store=new Map(),now=new Date(2026,9,26,hour,minute,0,0);
+  const b=browser(store,now), c=new b.Card();
+  c.setConfig({type:'custom:frankys-christmas-card',schedule_start:start,schedule_end:end});
+  c._state.enabled=true;
+  c._state.interval='hourly';
+  c._save();
+  c.isConnected=true;
+  c.connectedCallback();
+  assert.equal(b.timers.size,1,'Hourly mode schedules exactly one timeout');
+  assert.equal([...b.timers.values()][0].ms,expectedMinutes*60000,'Next flight at the correct full hour');
+  c.disconnectedCallback();
+  assert.equal(b.timers.size,1,'Hourly schedule survives leaving card view');
+  const refreshed=browser(store,now);
+  assert.equal(refreshed.timers.size,1,'Hourly mode restored without opening the card');
+  assert.equal([...refreshed.timers.values()][0].ms,expectedMinutes*60000,'Restored hourly clock alignment');
+}
+expectHourly(9,15,'09:00','22:00',45);
+expectHourly(8,45,'09:00','22:00',15);
+expectHourly(21,15,'09:00','22:00',705);
+expectHourly(9,35,'10:15','11:05',85);
+const narrow=browser(new Map(),new Date(2026,9,26,9,10));
+const narrowCard=new narrow.Card();
+narrowCard.setConfig({type:'custom:frankys-christmas-card',schedule_start:'09:05',schedule_end:'09:20'});
+narrowCard._state.enabled=true;
+narrowCard._state.interval='hourly';
+narrowCard._save();
+narrowCard.isConnected=true;
+narrowCard.connectedCallback();
+assert.equal(narrow.timers.size,0,'No full hour inside the configured window');
+console.log('OK: Santa global scheduler, navigation, reload, visibility, no duplicate timers and fixed hourly flights');
