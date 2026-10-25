@@ -14,6 +14,7 @@ jobs:
           node --check dist/frankys-christmas-card.js
           node tests/editor.test.cjs
           node tests/global-scheduler.test.cjs
+          node tests/audio.test.cjs
       - name: Ensure bundled assets are present
         run: |
           test -s dist/sleigh.webm
