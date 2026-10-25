@@ -330,7 +330,14 @@ class FrankysChristmasCard extends HTMLElement {
      return;
    }
    this._clearSchedule();
-   if(!this._state||!this._state.enabled||document.hidden)return;
+   /* Respect the legacy global JARVIS event listener on this display:
+      do not render two Santas if standalone mode is enabled. */
+   if(!this._state||!this._state.enabled){
+     if(window.__FrankysChristmasStandaloneOwner===this)window.__FrankysChristmasStandaloneOwner=null;
+     return;
+   }
+   window.__FrankysChristmasStandaloneOwner=this;
+   if(document.hidden)return;
    var self=this,now=new Date(),nowMs=now.getTime();
    var start=new Date(now),end=new Date(now);
    var a=this._state.start_time.split(':').map(Number),b=this._state.end_time.split(':').map(Number);
