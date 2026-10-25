@@ -39,6 +39,8 @@ type: custom:frankys-christmas-card
 
 The card is initially **disabled** on each monitor. Enabling the card makes it run its own local schedule; **Sound on/off** controls its audio. Browsers may require one user interaction before they permit automatic sound playback.
 
+**All dashboard views:** After opening the Christmas Card once on a display, its flight schedule continues on that display across Lovelace views, even when the card is no longer visible. The HACS dashboard resource restores the schedule after a page reload, including when another view is opened first. The dashboard must remain open; closing the browser stops flights. Each browser/display has its own local settings. On upgrading from an older version, open the control card once to register its configuration.
+
 ### Optional configuration
 
 ```yaml
