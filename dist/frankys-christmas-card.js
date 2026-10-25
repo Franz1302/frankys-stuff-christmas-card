@@ -1,4 +1,4 @@
-/* Franky's Christmas Card v0.2.4 public beta — HACS default cinematic video + de/en strings — standalone Home Assistant Lovelace card
+/* Franky's Christmas Card v0.2.5 — HACS default cinematic video + de/en strings — standalone Home Assistant Lovelace card
  * One monitor; no helpers, automations, Browser Mod, or cloud services required.
  * Bundled WebM/WebP and audio files are installed with HACS; individual asset URLs can be overridden.
  */
@@ -142,6 +142,35 @@ function timeMinutes(value){
 function finite(n, fallback, min, max) {
   n=Number(n); return isFinite(n) ? Math.max(min,Math.min(max,n)) : fallback;
 }
+/* One page-wide scheduler, independent of card lifecycle. */
+var GLOBAL_CONFIG_KEY='frankys-christmas-v1-global-config';
+var globalFlightController=null;
+function getGlobalFlightController(){
+ if(globalFlightController)return globalFlightController;
+ globalFlightController=new FrankysChristmasCard();
+ globalFlightController._isGlobalFlightController=true;
+ document.addEventListener('visibilitychange',globalFlightController._onVisibility);
+ return globalFlightController;
+}
+function activateGlobalFlightController(card){
+ var ctrl=getGlobalFlightController();
+ if(ctrl._config&&ctrl._state&&
+    JSON.stringify(ctrl._config)===JSON.stringify(card._config)&&
+    JSON.stringify(ctrl._state)===JSON.stringify(card._state))return ctrl;
+ ctrl._config=Object.assign({},card._config);
+ ctrl._state=Object.assign({},card._state);
+ try{localStorage.setItem(GLOBAL_CONFIG_KEY,JSON.stringify(card._config));}catch(e){}
+ ctrl._applySchedule();
+ return ctrl;
+}
+function restoreGlobalFlightController(){
+ var saved=null;
+ try{saved=JSON.parse(localStorage.getItem(GLOBAL_CONFIG_KEY)||'null');}catch(e){}
+ if(!saved||typeof saved!=='object')return;
+ var ctrl=getGlobalFlightController();
+ ctrl.setConfig(saved);
+ ctrl._applySchedule();
+}
 var CSS = ':host{display:block}ha-card{padding:16px 18px;color:var(--primary-text-color,#eef6fc);background:var(--card-background-color,#141b2a);border-radius:16px;box-sizing:border-box}'+
 '.top{display:flex;align-items:center;gap:11px}.mark{font-size:28px;line-height:1}.heading{flex:1;min-width:0}.title{font-size:16px;font-weight:700}.subtitle{font-size:12px;opacity:.72;margin-top:3px}.status{font-size:12px;white-space:nowrap;color:var(--secondary-text-color,#aab)}'+
 '.dot{width:8px;height:8px;border-radius:50%;background:#8794a6;display:inline-block;margin-right:5px}.dot.on{background:#32c992;box-shadow:0 0 8px #32c992}'+
@@ -197,18 +226,14 @@ class FrankysChristmasCard extends HTMLElement {
      this._save();
      try{localStorage.removeItem(this._key()+'-daily-plan');}catch(ignore){}
    }
-   this._render();
+   if(!this._isGlobalFlightController)this._render();
    if(this.isConnected)this._applySchedule();
  }
  connectedCallback() {
-   if(!this._config)return;
-   document.addEventListener('visibilitychange',this._onVisibility);
-   this._applySchedule();
+   if(this._config)this._applySchedule();
  }
  disconnectedCallback() {
-   document.removeEventListener('visibilitychange',this._onVisibility);
-   this._clearSchedule();this._stop();
-   if(window.__FrankysChristmasStandaloneOwner===this)window.__FrankysChristmasStandaloneOwner=null;
+   /* The shared scheduler keeps running when Lovelace removes the card. */
  }
  set hass(hass){
    var lang=(hass&&hass.locale&&hass.locale.language)||(hass&&hass.language)||navigator.language||'en';
@@ -217,17 +242,17 @@ class FrankysChristmasCard extends HTMLElement {
  }
  _txt(id){
    var de={
-     subtitle:'Weihnachtsflug · nur dieser Bildschirm',
+     subtitle:'Weihnachtsflug · alle Dashboard-Ansichten',
      test:'🛷 Testflug',coffee:'☕ Danke für den Kaffee',interval:'Flugintervall',
-     daily:'1–10 Flüge/Tag (Standard)',hours:'Flugzeiten',from:'Von',to:'Bis',defaultHint:'Automatisch nur innerhalb der eingestellten Uhrzeiten; Testflug jederzeit möglich.',
+     daily:'1–10 Flüge/Tag (Standard)',hourly:'Jede volle Stunde',hours:'Flugzeiten',from:'Von',to:'Bis',defaultHint:'Automatisch nur innerhalb der eingestellten Uhrzeiten; Testflug jederzeit möglich.',
      turnOn:'▶ Einschalten',turnOff:'⏸ Ausschalten',
      soundOn:'🔊 Ton an',soundOff:'🔇 Ton aus',
      active:'AKTIV',inactive:'AUS'
    };
    var en={
-     subtitle:'Christmas flight · this screen only',
+     subtitle:'Christmas flight · all dashboard views',
      test:'🛷 Test flight',coffee:'☕ Thanks for Coffee',interval:'Flight schedule',
-     daily:'1–10 flights/day (default)',hours:'Flight hours',from:'From',to:'Until',defaultHint:'Automatic flights only during your chosen hours; manual test flight works anytime.',
+     daily:'1–10 flights/day (default)',hourly:'Every full hour',hours:'Flight hours',from:'From',to:'Until',defaultHint:'Automatic flights only during your chosen hours; manual test flight works anytime.',
      turnOn:'▶ Enable',turnOff:'⏸ Disable',
      soundOn:'🔊 Sound on',soundOff:'🔇 Sound off',
      active:'ON',inactive:'OFF'
@@ -244,7 +269,7 @@ class FrankysChristmasCard extends HTMLElement {
    var data=null;try{data=JSON.parse(localStorage.getItem(this._key())||'null');}catch(e){}
    this._state={
      enabled:!!(data&&data.enabled),sound:!!(data&&data.sound),
-     interval:(data&&['3-8','5-10','10-20','1-2'].indexOf(data.interval)!==-1)?data.interval:'',
+     interval:(data&&['3-8','5-10','10-20','1-2','hourly'].indexOf(data.interval)!==-1)?data.interval:'',
      start_time:parseTime(data&&data.start_time,this._config.schedule_start),
      end_time:parseTime(data&&data.end_time,this._config.schedule_end)
    };
@@ -256,11 +281,11 @@ class FrankysChristmasCard extends HTMLElement {
  _save(){try{localStorage.setItem(this._key(),JSON.stringify(this._state));}catch(e){}}
  _render(){
    if(!this.shadowRoot||!this._config)return;
-   this.shadowRoot.innerHTML='<style>'+CSS+'</style><ha-card data-layout="'+this._config.layout_mode+'"><div class="top"><span class="mark">🎅</span><div class="heading"><div class="title"></div><div class="subtitle">'+this._txt('subtitle')+'</div></div><div class="status"><span class="dot"></span><span class="status-text"></span></div></div><div class="buttons"><button id="toggle" type="button"></button><button id="sound" type="button"></button><button id="test" type="button">'+this._txt('test')+'</button><a class="kofi" href="https://ko-fi.com/Frankys_Stuff" target="_blank" rel="noopener noreferrer">'+this._txt('coffee')+'</a></div><div class="detail"><label for="times">'+this._txt('interval')+'</label><select id="times"><option value="default">'+this._txt('daily')+'</option><option value="1-2">1–2 Minuten</option><option value="3-8">3–8 Minuten</option><option value="5-10">5–10 Minuten</option><option value="10-20">10–20 Minuten</option></select></div><div class="time-window"><strong>'+this._txt('hours')+'</strong><label for="from">'+this._txt('from')+'</label><input id="from" type="time"><label for="to">'+this._txt('to')+'</label><input id="to" type="time"></div><div class="note">'+this._txt('defaultHint')+'</div></ha-card>';
+   this.shadowRoot.innerHTML='<style>'+CSS+'</style><ha-card data-layout="'+this._config.layout_mode+'"><div class="top"><span class="mark">🎅</span><div class="heading"><div class="title"></div><div class="subtitle">'+this._txt('subtitle')+'</div></div><div class="status"><span class="dot"></span><span class="status-text"></span></div></div><div class="buttons"><button id="toggle" type="button"></button><button id="sound" type="button"></button><button id="test" type="button">'+this._txt('test')+'</button><a class="kofi" href="https://ko-fi.com/Frankys_Stuff" target="_blank" rel="noopener noreferrer">'+this._txt('coffee')+'</a></div><div class="detail"><label for="times">'+this._txt('interval')+'</label><select id="times"><option value="default">'+this._txt('daily')+'</option><option value="hourly">'+this._txt('hourly')+'</option><option value="1-2">1–2 Minuten</option><option value="3-8">3–8 Minuten</option><option value="5-10">5–10 Minuten</option><option value="10-20">10–20 Minuten</option></select></div><div class="time-window"><strong>'+this._txt('hours')+'</strong><label for="from">'+this._txt('from')+'</label><input id="from" type="time"><label for="to">'+this._txt('to')+'</label><input id="to" type="time"></div><div class="note">'+this._txt('defaultHint')+'</div></ha-card>';
    this.shadowRoot.querySelector('.title').textContent=this._config.title;
    var self=this;
    this.shadowRoot.getElementById('toggle').onclick=function(){self._state.enabled=!self._state.enabled;self._save();self._update();if(!self._state.enabled)self._stop();self._applySchedule();};
-   this.shadowRoot.getElementById('sound').onclick=function(){self._state.sound=!self._state.sound;self._save();self._update();};
+   this.shadowRoot.getElementById('sound').onclick=function(){self._state.sound=!self._state.sound;self._save();self._update();self._applySchedule();};
    this.shadowRoot.getElementById('test').onclick=function(){self._play();};
    this.shadowRoot.getElementById('times').onchange=function(){self._state.interval=this.value==='default'?'':this.value;self._save();self._applySchedule();};
    function onHoursChange(){
@@ -300,13 +325,19 @@ class FrankysChristmasCard extends HTMLElement {
    return minute>=timeMinutes(this._state.start_time)&&minute<timeMinutes(this._state.end_time);
  }
  _applySchedule(){
+   if(!this._isGlobalFlightController){
+     if(this._config&&this._state)activateGlobalFlightController(this);
+     return;
+   }
    this._clearSchedule();
-   if(!this.isConnected||!this._state||!this._state.enabled||document.hidden){
+   /* Respect the legacy global JARVIS event listener on this display:
+      do not render two Santas if standalone mode is enabled. */
+   if(!this._state||!this._state.enabled){
      if(window.__FrankysChristmasStandaloneOwner===this)window.__FrankysChristmasStandaloneOwner=null;
      return;
    }
-   if(window.__FrankysChristmasStandaloneOwner&&window.__FrankysChristmasStandaloneOwner!==this)return;
    window.__FrankysChristmasStandaloneOwner=this;
+   if(document.hidden)return;
    var self=this,now=new Date(),nowMs=now.getTime();
    var start=new Date(now),end=new Date(now);
    var a=this._state.start_time.split(':').map(Number),b=this._state.end_time.split(':').map(Number);
@@ -342,6 +373,29 @@ class FrankysChristmasCard extends HTMLElement {
      }
      return;
    }
+   /* Fixed hourly mode: one flight at the next full clock hour, never catch up. */
+   if(this._state.interval==='hourly'){
+     var nextHour=new Date(now);
+     nextHour.setMinutes(0,0,0);
+     if(nextHour.getTime()<=nowMs+500)nextHour.setHours(nextHour.getHours()+1);
+     for(var hourTry=0;hourTry<48;hourTry++){
+       var clockMinute=nextHour.getHours()*60;
+       var windowEnd=new Date(nextHour);
+       windowEnd.setHours(b[0],b[1],0,0);
+       if(clockMinute>=timeMinutes(this._state.start_time)&&
+          clockMinute<timeMinutes(this._state.end_time)&&
+          nextHour.getTime()+this._config.duration*1000<=windowEnd.getTime())break;
+       nextHour.setHours(nextHour.getHours()+1);
+     }
+     /* Narrow time windows may contain no full hour. */
+     if(hourTry===48)return;
+     this._timer=setTimeout(function(){
+       self._timer=0;
+       if(self._state.enabled&&!document.hidden&&self._withinWindow())self._play();
+       self._applySchedule();
+     },Math.max(100,nextHour.getTime()-nowMs));
+     return;
+   }
    /* Minute modes also respect the active-time window. */
    var pair=this._state.interval.split('-').map(Number);
    var ms=(pair[0]+Math.random()*(pair[1]-pair[0]))*60000;
@@ -358,6 +412,10 @@ class FrankysChristmasCard extends HTMLElement {
    },Math.max(100,when-nowMs));
  }
  _stop(){
+   if(!this._isGlobalFlightController){
+     if(globalFlightController)globalFlightController._stop();
+     return;
+   }
    this._alive=false;
    if(this._durationTimer)clearTimeout(this._durationTimer);this._durationTimer=0;
    if(this._soundTimer)clearTimeout(this._soundTimer);this._soundTimer=0;
@@ -369,6 +427,10 @@ class FrankysChristmasCard extends HTMLElement {
    this._stage=null;this._ctx=null;this._canvas=null;this._particles=[];
  }
  _play(){
+   if(!this._isGlobalFlightController){
+     if(!this._config||!this._state)return false;
+     return activateGlobalFlightController(this)._play();
+   }
    if(document.hidden||!document.body)return false;
    this._stop();
    var self=this, c=this._config;
@@ -529,6 +591,7 @@ class FrankysChristmasCardEditor extends HTMLElement {
 
 customElements.define('frankys-christmas-card-editor',FrankysChristmasCardEditor);
 customElements.define('frankys-christmas-card',FrankysChristmasCard);
+restoreGlobalFlightController();
 window.customCards=window.customCards||[];
 if(!window.customCards.some(function(x){return x.type==='frankys-christmas-card';})){
  window.customCards.push({type:'frankys-christmas-card',name:"Franky's Christmas Card",description:'Responsive Christmas overlay with a visual editor, local schedules and bundled media.'});

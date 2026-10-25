@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.2.5 — Global dashboard flights & fixed hourly schedule
+- Santa keeps flying on every Lovelace dashboard view on the current browser/display, without the control card remaining visible
+- New "Every full hour" / "Jede volle Stunde" schedule alongside existing random-per-day and random-minute options
+- Existing configurable daily flight window, media, audio, manual test button, and locally saved settings retained
+- A global browser-local scheduler prevents duplicate intervals during dashboard navigation and resumes after page reloads
+- Compatibility with the pre-existing JARVIS Christmas event overlay; no Home Assistant restart required
+- New regression tests cover navigation, tab visibility, reloads, hourly scheduling, and narrow windows
+
+
 ## v0.2.4 — Responsive layout & visual editor
 - Native Home Assistant visual configuration editor, with localized controls (German/English)
 - Responsive auto/compact/comfortable card density, accessible touch targets (at least 44px)
