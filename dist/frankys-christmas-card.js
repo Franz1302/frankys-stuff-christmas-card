@@ -389,6 +389,13 @@ class FrankysChristmasCard extends HTMLElement {
    }
    window.__FrankysChristmasStandaloneOwner=this;
    if(document.hidden)return;
+   /* Initialize audio when the persisted scheduler wakes up, not only on the
+      first timed flight: Howler can then receive later user gestures anywhere
+      in the dashboard, even when the control card is on another view. */
+   if(this._state.sound && typeof Audio!=='undefined'){
+     if(this._config.sound)ChristmasAudio.prepare(this._config.sound);
+     if(this._config.bells)getBellPlayer(this._config.bells).prepare();
+   }
    var self=this,now=new Date(),nowMs=now.getTime();
    var start=new Date(now),end=new Date(now);
    var a=this._state.start_time.split(':').map(Number),b=this._state.end_time.split(':').map(Number);
