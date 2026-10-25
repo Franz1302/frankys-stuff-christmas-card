@@ -39,6 +39,8 @@ type: custom:frankys-christmas-card
 
 The card is initially **disabled** on each monitor. Enabling the card makes it run its own local schedule; **Sound on/off** controls its audio. Browsers may require one user interaction before they permit automatic sound playback.
 
+**Audio (v0.2.6):** Santa's voice is now played through a bundled offline copy of Howler.js, with browser audio unlocking on a tap of **Enable**, **Sound on**, or **Test flight**. Glöckchen keep their original crossfaded Web Audio mix, using the same Howler AudioContext where supported. The HTML5 fallback also uses Howler; blocked audio or loading errors are reported in the browser console. Autoplay permissions cannot be bypassed, so tap a control again if a browser suspends audio after a reload. This does not fix a device where locally opened MP3 files are already silent.
+
 **All dashboard views:** After opening the Christmas Card once on a display, its flight schedule continues on that display across Lovelace views, even when the card is no longer visible. The HACS dashboard resource restores the schedule after a page reload, including when another view is opened first. The dashboard must remain open; closing the browser stops flights. Each browser/display has its own local settings. On upgrading from an older version, open the control card once to register its configuration.
 
 ### Optional configuration

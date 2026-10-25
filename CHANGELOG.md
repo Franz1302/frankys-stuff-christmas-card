@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.6 — Reliable Santa audio across dashboard flights
+- Reusable, locally bundled Howler.js Web Audio for Santa voice, with audio unlocking on card buttons
+- Global scheduler preloads audio so subsequent dashboard interaction can unlock future automatic flights
+- Glöckchen retain crossfade and fade envelopes, with shared audio context and HTML5 fallback
+- Error reporting for blocked audio and media loading failures
+- Automated regression tests and real Chromium desktop/tablet browser tests for repeated automatic flights
+- No change to dashboard configuration, flight times, animation or local-only operation
+
 ## v0.2.5 — Global dashboard flights & fixed hourly schedule
 - Santa keeps flying on every Lovelace dashboard view on the current browser/display, without the control card remaining visible
 - New "Every full hour" / "Jede volle Stunde" schedule alongside existing random-per-day and random-minute options
