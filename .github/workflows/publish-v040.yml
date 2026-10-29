@@ -1,0 +1,46 @@
+name: Publish v0.4.0 (Franky's Seasonal Fun Card)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-v040.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate Seasonal Fun and all bundled media
+        run: |
+          node --check dist/frankys-christmas-card.js
+          node --check dist/legacy-christmas-engine.js
+          node --check dist/frankys-seasonal-card.js
+          node --check dist/marshmallow-engine.js
+          node tests/seasonal-fun.test.cjs
+          test -s dist/sleigh.webm
+          test -s dist/sleigh-ipad.webp
+          test -s dist/santa.mp3
+          test -s dist/bells.mp3
+          test -s dist/vendor/THREE_LICENSE.txt
+      - name: HACS repository validation
+        uses: hacs/action@main
+        with:
+          category: plugin
+      - name: Publish v0.4.0 only once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v0.4.0 >/dev/null 2>&1; then
+            echo "v0.4.0 already exists."
+            exit 0
+          fi
+          gh release create v0.4.0 \
+            --target "$GITHUB_SHA" \
+            --title "Franky's Seasonal Fun Card v0.4.0" \
+            --notes-file RELEASE_NOTES_V040.md \
+            --latest
