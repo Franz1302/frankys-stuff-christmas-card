@@ -157,8 +157,8 @@ class SeasonalController{
      if(!SCENES.includes(old.season))this.state.season=this.config.season;
      this.state.sound=this.state.season==='christmas'?this.state.sound_christmas:this.state.sound_halloween;
      if(!SCHEDULE.includes(old.mode))this.state.mode=this.config.schedule_mode;
-     if(!customElements.get('frankys-christmas-card')){
-       customElements.whenDefined('frankys-christmas-card').then(()=>this.silenceLegacyChristmas());
+     if(!customElements.get('frankys-christmas-renderer')){
+       customElements.whenDefined('frankys-christmas-renderer').then(()=>this.silenceLegacyChristmas());
      }
      if(!old.start)this.state.start=this.config.schedule_start;
      if(!old.end)this.state.end=this.config.schedule_end;
@@ -206,9 +206,9 @@ class SeasonalController{
   // Retain the published Christmas renderer, sound mixing and particle effects.
  // This detached bridge takes over its old standalone timer with enabled=false.
  silenceLegacyChristmas(){
-   if(!customElements.get('frankys-christmas-card'))return;
+   if(!customElements.get('frankys-christmas-renderer'))return;
    try{
-     if(!this.xmas)this.xmas=document.createElement('frankys-christmas-card');
+     if(!this.xmas)this.xmas=document.createElement('frankys-christmas-renderer');
      const c={type:'custom:frankys-christmas-card',duration:this.config.christmas_duration,width_percent:this.config.christmas_size,
        sound_volume:this.config.christmas_volume,bells_volume:this.config.bells_volume,
        schedule_start:this.state.start,schedule_end:this.state.end};
@@ -257,7 +257,7 @@ class SeasonalController{
    this.stop();const token=this.generation;this.busy=true;this.changed();
    try{
      if(this.state.season==='christmas'){
-       if(!customElements.get('frankys-christmas-card'))throw Error('Christmas Card resource is missing');
+       if(!customElements.get('frankys-christmas-renderer'))throw Error('Christmas renderer is missing');
        this.silenceLegacyChristmas();
        this.xmas._state.sound=this.state.sound;
        this.xmas._unlockAudio?.();
