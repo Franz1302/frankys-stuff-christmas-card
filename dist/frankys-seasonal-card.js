@@ -148,6 +148,9 @@ class SeasonalController{
    this.wired=false;
    this.onVisible=()=>{if(document.hidden)this.stop();this.schedule();};
    document.addEventListener('visibilitychange',this.onVisible);
+   // Like the former Christmas Card, resume the saved schedule on any view,
+   // even when its control card is not currently displayed.
+   if(this.state.enabled)this.schedule();
  }
  changed(){window.dispatchEvent(new Event('frankys-seasonal-changed'));}
  configure(raw){
