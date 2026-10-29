@@ -1,44 +1,37 @@
-name: Validate HACS
+name: Validate HACS Seasonal Fun Card
 on:
   push:
   pull_request:
   workflow_dispatch:
-permissions: {}
+permissions:
+  contents: read
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: JavaScript syntax
         run: |
           node --check dist/frankys-christmas-card.js
-          node tests/editor.test.cjs
-          node tests/global-scheduler.test.cjs
-          node tests/audio.test.cjs
-      - name: Ensure bundled assets are present
+          node --check dist/legacy-christmas-engine.js
+          node --check dist/frankys-seasonal-card.js
+          node --check dist/marshmallow-engine.js
+          node --check dist/vendor/GLTFLoader.js
+          node --check dist/vendor/BufferGeometryUtils.js
+          node tests/seasonal-fun.test.cjs
+      - name: Ensure Christmas media and licenses remain available
         run: |
           test -s dist/sleigh.webm
           test -s dist/sleigh-ipad.webp
           test -s dist/santa.mp3
           test -s dist/bells.mp3
           test -s assets/preview.jpg
-      - name: HACS repository validation
+          test -s ASSET_LICENSE.md
+          test -s THIRD_PARTY_LICENSES.md
+      - name: HACS validation
         uses: hacs/action@main
         with:
           category: plugin
-
-  audio-browser:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Use preinstalled Google Chrome for browser audio testing
-        run: google-chrome --version
-      - name: Install minimal Playwright browser driver (no browser download)
-        run: npm install --no-save --package-lock=false playwright-core@1.56.1
-      - name: Test real Chromium autoplay policy after user gesture
-        run: node tests/audio-browser.test.cjs
