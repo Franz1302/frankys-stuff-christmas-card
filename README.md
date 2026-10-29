@@ -2,6 +2,8 @@
 
 **Formerly Franky's Christmas Card.** Seasonal overlay animations for Home Assistant dashboards. Christmas and Halloween share one schedule and a compact customizable control card.
 
+![Franky's Seasonal Fun Card preview](assets/preview.jpg)
+
 ## Existing Christmas Card users — important
 
 **This is an update to the same HACS repository. Do not uninstall Christmas Card or add a second repository.**
