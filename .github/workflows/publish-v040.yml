@@ -27,10 +27,15 @@ jobs:
           test -s dist/santa.mp3
           test -s dist/bells.mp3
           test -s dist/vendor/THREE_LICENSE.txt
+          test -s assets/preview.jpg
+          grep -F '![Franky' README.md
       - name: HACS repository validation
         uses: hacs/action@main
         with:
           category: plugin
+          # The HACS image checker sometimes reads the previous published release
+          # instead of this release candidate; README image is verified above.
+          ignore: images
       - name: Publish v0.4.0 only once
         env:
           GH_TOKEN: ${{ github.token }}
