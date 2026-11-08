@@ -137,6 +137,32 @@ const server=http.createServer((req,res)=>{
    assert.equal(parallel.imageLoaded,true,'Isolated resource loads its copied St. Martin animation');
    assert.equal(parallel.cleaned,true);
    assert.equal(errors.length,0,'Parallel test bundle has no browser errors: '+errors.join('; '));
+   const seasonalCard=page.locator('frankys-seasonal-card');
+   await seasonalCard.locator('#options').click();
+   await seasonalCard.locator('#calendar-details summary').click();
+   assert.equal(await seasonalCard.locator('#calendar-details').evaluate(el=>el.open),true,'Calendar opens inside existing Options');
+   assert.equal(await seasonalCard.locator('#options-panel').isVisible(),true,'Existing Options popup remains expanded');
+   await seasonalCard.locator('#calendar-enabled').check();
+   const start=seasonalCard.locator('[data-calendar-holiday="st_martin"][data-field="start"]');
+   await start.fill('09.11');
+   await start.press('Tab');
+   const saved=await page.evaluate(()=>({
+     calendar:window.__frankysSeasonalController.config.seasonal_calendar,
+     override:localStorage.getItem('frankys-seasonal/calendar-override/v1'),
+     isolated:localStorage.getItem('frankys-seasonal-test/calendar-override/v1')
+   }));
+   assert.equal(saved.calendar.enabled,true,'In-card setting enables annual calendar');
+   assert.equal(saved.calendar.holidays.st_martin.start,'11-09','Date field accepts DD.MM');
+   assert(saved.override,'Calendar changes are saved to browser storage');
+   assert.equal(saved.isolated,null,'Regular calendar does not overwrite test calendar');
+   await seasonalCard.locator('#calendar-details summary').click();
+   assert.equal(await seasonalCard.locator('#calendar-details').evaluate(el=>el.open),false,'Calendar closes normally');
+   assert.equal(await seasonalCard.locator('#options-panel').isVisible(),true,'Closing calendar preserves Options');
+   await page.reload();
+   await page.waitForFunction(()=>window.testReady===true);
+   const restored=await page.evaluate(()=>window.__frankysSeasonalController.config.seasonal_calendar);
+   assert.equal(restored.enabled,true,'Calendar survives browser reload');
+   assert.equal(restored.holidays.st_martin.start,'11-09','Saved date survives browser reload');
    console.log('OK: '+profile.name+' Chromium profile, Christmas audio and parallel isolated St. Martin bundle');
    await context.close();
   }
