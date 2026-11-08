@@ -21,7 +21,7 @@ const DEFAULT={
  type:'custom:frankys-seasonal-card',title:"Franky's Seasonal Fun Card",season:'christmas',
  schedule_mode:'daily',schedule_start:'09:00',schedule_end:'22:00',interval_minutes:60,
  seasonal_calendar:{enabled:false,holidays:DEFAULT_HOLIDAYS},
- st_martin_url:'',nikolaus_url:'',
+ st_martin_url:'',nikolaus_url:'',nikolaus_sound_url:'',nikolaus_volume:.8,
  christmas_duration:10,christmas_size:60,christmas_volume:.55,bells_volume:.78,
  christmas_video:'',christmas_sound:'',christmas_bells:'',christmas_ios_video:'',christmas_fallback:'',
  halloween_fps:30,halloween_particles:40,halloween_size:1,halloween_direction:'left',
@@ -69,7 +69,7 @@ function configOf(raw={}){
  if(mins(c.schedule_start)>=mins(c.schedule_end)){
    c.schedule_start='09:00';c.schedule_end='22:00';
  }
- const ranges={interval_minutes:[15,1440],christmas_duration:[4,30],christmas_size:[20,95],christmas_volume:[0,1],bells_volume:[0,1],halloween_fps:[24,60],halloween_particles:[24,60],halloween_size:[.6,1.6],halloween_render_scale:[.5,1],halloween_volume:[0,1],halloween_laugh_volume:[0,1],halloween_pop_volume:[0,1],halloween_bubbles_volume:[0,1]};
+ const ranges={interval_minutes:[15,1440],christmas_duration:[4,30],christmas_size:[20,95],christmas_volume:[0,1],bells_volume:[0,1],nikolaus_volume:[0,1],halloween_fps:[24,60],halloween_particles:[24,60],halloween_size:[.6,1.6],halloween_render_scale:[.5,1],halloween_volume:[0,1],halloween_laugh_volume:[0,1],halloween_pop_volume:[0,1],halloween_bubbles_volume:[0,1]};
  for(const [k,[a,b]] of Object.entries(ranges))c[k]=clamp(c[k],a,b,DEFAULT[k]);
  c.halloween_fps=[24,30,45,60].includes(c.halloween_fps)?c.halloween_fps:30;
  c.halloween_particles=[24,40,60].includes(c.halloween_particles)?c.halloween_particles:40;
@@ -84,7 +84,7 @@ function configOf(raw={}){
  c.design_custom_css=typeof c.design_custom_css==='string'?c.design_custom_css.slice(0,10000):'';
  const calendar=c.seasonal_calendar&&typeof c.seasonal_calendar==='object'?c.seasonal_calendar:{};
  c.seasonal_calendar={enabled:bool(calendar.enabled,false),holidays:normalizeHolidays(calendar.holidays)};
- for(const key of ['christmas_video','christmas_sound','christmas_bells','christmas_ios_video','christmas_fallback','halloween_laugh_url','halloween_pop_url','halloween_bubbles_url','st_martin_url','nikolaus_url'])
+ for(const key of ['christmas_video','christmas_sound','christmas_bells','christmas_ios_video','christmas_fallback','halloween_laugh_url','halloween_pop_url','halloween_bubbles_url','st_martin_url','nikolaus_url','nikolaus_sound_url'])
    c[key]=typeof c[key]==='string'&&!/^(?:data:|javascript:|\/\/)/i.test(c[key].trim())?c[key].trim():'';
  c.halloween_overlay=c.halloween_overlay!==false && c.halloween_overlay!=='false';
  c.halloween_transparent=c.halloween_transparent!==false && c.halloween_transparent!=='false';
@@ -180,7 +180,7 @@ class SeasonalController{
      mode:SCHEDULE.includes(old.mode)?old.mode:'daily',
      start:cleanClock(old.start,'09:00'),end:cleanClock(old.end,'22:00'),
      interval_minutes:clamp(old.interval_minutes,15,1440,this.config.interval_minutes)};
-   this.timer=null;this.busy=false;this.xmas=null;this.marsh=null;this.marshPromise=null;this.imageScene=null;this.imageResolve=null;
+   this.timer=null;this.busy=false;this.xmas=null;this.marsh=null;this.marshPromise=null;this.imageScene=null;this.imageResolve=null;this.sceneAudio=null;
    this.generation=0;this.previewHost=null;this.imageURL=null;
    this.wired=false;
    this.onVisible=()=>{if(document.hidden)this.stop();else this.syncCalendar();this.schedule();};
@@ -336,9 +336,25 @@ class SeasonalController{
    document.body.appendChild(image);
    image.src=this.imageURL;
    await loaded;
+   if(this.generation!==token)return null;
+   if(scene==='nikolaus' && this.state.sound){
+     const soundURL=scenes.getSceneSoundURL(scene,this.config.nikolaus_sound_url);
+     if(soundURL && typeof Audio!=='undefined'){
+       const audio=new Audio(soundURL);
+       audio.preload='auto';
+       audio.volume=this.config.nikolaus_volume;
+       this.sceneAudio=audio;
+       try{
+         const started=audio.play();
+         if(started && typeof started.catch==='function')
+           started.catch(error=>console.warn('[Seasonal] Nikolaus audio blocked:',error));
+       }catch(error){console.warn('[Seasonal] Nikolaus audio unavailable:',error);}
+     }
+   }
    return duration;
  }
  stopImageScene(){
+   if(this.sceneAudio){this.sceneAudio.pause();this.sceneAudio=null;}
    if(this.imageResolve){this.imageResolve();this.imageResolve=null;}
    if(this.imageScene){this.imageScene.onload=null;this.imageScene.onerror=null;this.imageScene.remove();this.imageScene=null;}
    if(this.imageURL){URL.revokeObjectURL(this.imageURL);this.imageURL=null;}
@@ -649,7 +665,9 @@ class FrankysSeasonalEditor extends HTMLElement{
    }
    html.push('</details>');
    str('st_martin_url',tr('St.-Martin-WebP-Pfad (optional)','St. Martin WebP path (optional)'));
-   str('nikolaus_url',tr('Nikolaus-WebP-Pfad','St. Nicholas WebP path'));
+   str('nikolaus_url',tr('Nikolaus-WebP-Pfad (optional)','St. Nicholas WebP path (optional)'));
+   str('nikolaus_sound_url',tr('Nikolaus-Tonspur (optional)','St. Nicholas soundtrack (optional)'));
+   num('nikolaus_volume',tr('Nikolaus-Lautstärke (0–1)','St. Nicholas volume (0–1)'),0,1,.05);
    html.push(`<details><summary>${tr('Kartendesign anpassen','Customize card design')}</summary>`);
    html.push(`<small>${tr('Ohne Änderungen wird das bisherige Grunddesign mit Home-Assistant-Farben verwendet. Leere Farbfelder übernehmen das HA-Theme.','Defaults use the current look and Home Assistant colors. Empty color fields inherit the HA theme.')}</small>`);
    const color=(key,label)=>{

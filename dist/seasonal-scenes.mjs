@@ -1,9 +1,18 @@
 const SCENES=Object.freeze({
  st_martin:new URL('./assets/St_Martin_korrigiert.webp',import.meta.url).href,
+ nikolaus:new URL('./assets/Nikolaus_ohne_Wasserzeichen_transparent.webp',import.meta.url).href,
+});
+
+const SOUNDS=Object.freeze({
+ nikolaus:new URL('./assets/Nikolaus_Mirelo_Ton_15s.mp3',import.meta.url).href,
 });
 
 export function getSceneURL(scene,customURL){
  return customURL||SCENES[scene]||null;
+}
+
+export function getSceneSoundURL(scene,customURL){
+ return customURL||SOUNDS[scene]||null;
 }
 
 export function webpDuration(buffer){

@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 
 const source=fs.readFileSync('dist/frankys-seasonal-card.js','utf8').replace(
  "await import('./seasonal-scenes.mjs')",
- "await Promise.resolve({getSceneURL:(scene,custom)=>custom||(scene==='st_martin'?'/assets/St_Martin_korrigiert.webp':null),webpDuration:()=>100})"
+ "await Promise.resolve({getSceneURL:(scene,custom)=>custom||(scene==='st_martin'?'/assets/St_Martin_korrigiert.webp':scene==='nikolaus'?'/assets/Nikolaus_ohne_Wasserzeichen_transparent.webp':null),getSceneSoundURL:(scene,custom)=>custom||(scene==='nikolaus'?'/assets/Nikolaus_Mirelo_Ton_15s.mp3':null),webpDuration:()=>100})"
 );
 function webpBuffer(){
  const bytes=new Uint8Array(36),view=new DataView(bytes.buffer);
@@ -16,6 +16,7 @@ function webpBuffer(){
 function createController(config={},options={}){
  const storage=new Map(Object.entries(options.storage||{})),listeners={},timers=new Map(),overlays=[],requests=[];
  let now=new Date(options.now||'2026-11-11T12:00:00'),nextTimer=0,objectURL=0,revoked=0;
+ const audios=[];
  const missing=options.missing===true;
  class FrozenDate extends Date {
   constructor(...args){super(...(args.length?args:[now]));}
@@ -32,6 +33,11 @@ function createController(config={},options={}){
   localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,String(value)),removeItem:key=>storage.delete(key),key:index=>[...storage.keys()][index]||null,get length(){return storage.size;}},
   customElements:{get(){return null;},whenDefined(){return Promise.resolve();},define(){}},
   HTMLElement:class {},Event:class {},CustomEvent:class {},
+  Audio:class {
+    constructor(src){this.src=src;this.paused=false;this.played=false;audios.push(this);}
+    play(){this.played=true;return Promise.resolve();}
+    pause(){this.paused=true;}
+  },
   setTimeout(callback,ms){const id=++nextTimer;timers.set(id,{callback,ms});return id;},
   clearTimeout(id){timers.delete(id);},
   URL:{createObjectURL(){return `blob:test-${++objectURL}`;},revokeObjectURL(){revoked++;}},
@@ -41,7 +47,7 @@ function createController(config={},options={}){
  vm.runInNewContext(source,context);
  const controller=context.window.__frankysSeasonalController;
  controller.configure({seasonal_calendar:{enabled:true,holidays:{...config}}});
- return {controller,storage,listeners,timers,overlays,requests,document:context.document,setNow(value){now=new Date(value);},get revoked(){return revoked;}};
+ return {controller,storage,listeners,timers,overlays,requests,audios,document:context.document,setNow(value){now=new Date(value);},get revoked(){return revoked;}};
 }
 
 function holiday(enabled=true,start,end){
@@ -201,7 +207,9 @@ async function playbackTests(){
  assert.match(source,/data-holiday="\$\{id\}"/,'Calendar holiday controls are rendered in the visual editor');
  assert.match(source,/new CustomEvent\('config-changed'/,'Calendar edits persist through Lovelace config-changed events');
  assert.match(scenes.getSceneURL('st_martin'),/assets\/St_Martin_korrigiert\.webp$/);
- assert.equal(scenes.getSceneURL('nikolaus'),null,'No placeholder St. Nicholas asset is assumed');
+ assert.match(scenes.getSceneURL('nikolaus'),/assets\/Nikolaus_ohne_Wasserzeichen_transparent\.webp$/,'Nikolaus has a bundled scene URL');
+ assert.match(scenes.getSceneSoundURL('nikolaus'),/assets\/Nikolaus_Mirelo_Ton_15s\.mp3$/,'Nikolaus has a bundled Mirelo track');
+ assert.equal(scenes.getSceneSoundURL('st_martin'),null,'St. Martin has no bundled soundtrack');
  assert.equal(scenes.getSceneURL('nikolaus','/local/nikolaus.webp'),'/local/nikolaus.webp','St. Nicholas path is configurable');
  assert.equal(scenes.webpDuration(webpBuffer()),5,'Animated WebP duration is derived from its frame timings');
  assert.throws(()=>scenes.webpDuration(new ArrayBuffer(4)),/Invalid WebP/);
@@ -217,5 +225,26 @@ async function playbackTests(){
   assert.equal(missing.overlays.length,0,'Missing media creates no overlay');
  }
  await playbackTests();
+ const nikolaus=createController({nikolaus:holiday(false,'12-06','12-06')});
+ nikolaus.document.hidden=false;
+ nikolaus.controller.setState({season:'nikolaus'});
+ await nikolaus.controller.play();
+ assert.equal(nikolaus.requests[0],'/assets/Nikolaus_ohne_Wasserzeichen_transparent.webp');
+ assert.equal(nikolaus.audios.length,1,'Nikolaus sound is started with the animation');
+ assert.equal(nikolaus.audios[0].src,'/assets/Nikolaus_Mirelo_Ton_15s.mp3');
+ assert.equal(nikolaus.audios[0].volume,.8);
+ assert.equal(nikolaus.audios[0].played,true);
+ nikolaus.controller.stop();
+ assert.equal(nikolaus.audios[0].paused,true,'Stopping the animation also stops the sound');
+ nikolaus.controller.setState({sound:false});
+ await nikolaus.controller.play();
+ assert.equal(nikolaus.audios.length,1,'Sound toggle disables Nikolaus audio');
+ nikolaus.controller.stop();
+ nikolaus.controller.setState({sound:true});
+ nikolaus.controller.configure({nikolaus_sound_url:'/local/alternative.mp3',nikolaus_volume:.35});
+ await nikolaus.controller.play();
+ assert.equal(nikolaus.audios[1].src,'/local/alternative.mp3','Custom sound overrides bundled media');
+ assert.equal(nikolaus.audios[1].volume,.35);
+ nikolaus.controller.stop();
  console.log('OK: calendar toggles, annual/cross-year/leap-day dates, midnight rollover, priority, manual preview and WebP playback lifecycle');
 })().catch(error=>{process.stderr.write(error.stack+'\n');process.exitCode=1;});

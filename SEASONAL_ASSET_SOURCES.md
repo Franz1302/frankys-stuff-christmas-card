@@ -12,8 +12,10 @@
 
 ## St. Martin and St. Nicholas
 - The St. Martin scene bundles the supplied transparent animation at `dist/assets/St_Martin_korrigiert.webp`; an optional custom WebP URL can override it.
-- No St. Nicholas animation is bundled or assumed. Its WebP path is configurable and remains empty until media is supplied.
-- Confirm and document the supplied St. Martin asset's usage terms before any public release; no license or attribution details were present in the repository.
+- St. Nicholas animation: `dist/assets/Nikolaus_ohne_Wasserzeichen_transparent.webp`, author-created Meshy video converted to transparent animated WebP. The extra donkey unexpectedly falls out of the gift sack and is intentionally retained.
+- **St. Nicholas sound provider: [Mirelo AI](https://mirelo.ai/)**. Track: `dist/assets/Nikolaus_Mirelo_Ton_15s.mp3`, generated from the author's video to match movement (15 seconds). The audio is NOT licensed under this repository's MIT source-code license. Under the [Mirelo Terms of Service](https://mirelo.ai/terms) (2026-10-19), Free Plan output is for non-commercial use only (section 2.1), and any shared or published output must visibly credit Mirelo as the sound provider (section 7.5). Do not relicense, sell, or redistribute this audio as a standalone stock sound.
+- Custom WebP and sound paths remain configurable. Browser autoplay restrictions can mute automatic playback until a user interacts with the dashboard.
+- Confirm and document the supplied St. Martin asset's usage terms before any public release; no license or attribution details were present in the repository. A public release also requires the two St. Nicholas media files to be present in dist/assets/.
 
 ## Local 3D dependencies
 - `dist/vendor/three.core.js`, `three.module.js`, `GLTFLoader.js`, `BufferGeometryUtils.js`: Three.js r180, copyright Three.js authors, MIT.

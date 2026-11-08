@@ -1,6 +1,6 @@
 # Franky's Seasonal Fun Card
 
-**Formerly Franky's Christmas Card.** Seasonal overlay animations for Home Assistant dashboards. Christmas, Halloween, St. Martin and a prepared St. Nicholas scene share one schedule and a compact customizable control card.
+**Formerly Franky's Christmas Card.** Seasonal overlay animations for Home Assistant dashboards. Christmas, Halloween, St. Martin and a St. Nicholas scene with synchronized sound share one schedule and a compact customizable control card.
 
 ![Franky's Seasonal Fun Card preview](assets/preview.jpg)
 
@@ -31,7 +31,7 @@ The repository URL retains the original `christmas-card` slug for safe upgrades.
 - Halloween: animated 3D marshmallow with walking, turning and bursting into smaller marshmallows, plus individual sounds.
 - St. Martin: transparent animated WebP scene bundled at `dist/assets/St_Martin_korrigiert.webp`; an optional URL can be set in the visual editor.
 - Optional annual holiday calendar, configured per card in the visual editor or YAML. Enable/disable each holiday and configure inclusive yearly `MM-DD` date ranges, including ranges across New Year. On overlaps, priority is Halloween, St. Martin, St. Nicholas, then Christmas.
-- St. Nicholas is prepared as a scene and calendar entry; configure its WebP path in the visual editor when its animation is available. A missing file displays a notice and does not affect other scenes.
+- St. Nicholas: 15-second transparent cartoon animation with two donkeys and a synchronized Mirelo sound-effects track (`dist/assets/Nikolaus_ohne_Wasserzeichen_transparent.webp` and `dist/assets/Nikolaus_Mirelo_Ton_15s.mp3`). The soundtrack follows the card's sound toggle; the visual editor allows optional custom media paths and a volume override. A missing file displays a notice and does not affect other scenes.
 - Shared local schedule: 1–10 random appearances/day, hourly, 1–2 / 3–8 / 5–10 / 10–20 minute patterns and user-defined minute interval, all within configurable start/end times.
 - Enable, Sound, Test and Stop buttons; extra settings under **Options**.
 - Visual editor with custom colors, opacity, rounding and optional scoped CSS.
@@ -64,6 +64,6 @@ The card stores this calendar with its Home Assistant card configuration; the ex
 
 ## Credits and media licenses
 
-Card source code: MIT, © 2026 Franky's Stuff. Original Christmas media and audio retain their applicable terms in `ASSET_LICENSE.md` and `THIRD_PARTY_LICENSES.md`. The Halloween model and original image were created by the author using Meshy and ChatGPT. The bundled sound effects are provided only for this creative project, not for standalone redistribution. Seasonal media rights are documented in `SEASONAL_ASSET_SOURCES.md`. Third-party Three.js code is MIT licensed: see `dist/vendor/THREE_LICENSE.txt`.
+Card source code: MIT, © 2026 Franky's Stuff. Original Christmas media and audio retain their applicable terms in `ASSET_LICENSE.md` and `THIRD_PARTY_LICENSES.md`. The Halloween model and original image were created by the author using Meshy and ChatGPT. The bundled sound effects are provided only for this creative project, not for standalone redistribution. Seasonal media rights are documented in `SEASONAL_ASSET_SOURCES.md`. **St. Nicholas sound provider: [Mirelo AI](https://mirelo.ai/)** (sound generated using Mirelo). Free-plan output is for non-commercial use, and Mirelo must be visibly credited when the audio is shared or published; see [Mirelo Terms of Service](https://mirelo.ai/terms), sections 2.1 and 7.5. Third-party Three.js code is MIT licensed: see `dist/vendor/THREE_LICENSE.txt`.
 
 [Support Franky's Stuff](https://ko-fi.com/Frankys_Stuff) · [Issues and feedback](https://github.com/Franz1302/frankys-stuff-christmas-card/issues)
