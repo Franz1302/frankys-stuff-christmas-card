@@ -3,7 +3,7 @@
  * installed Christmas Card (no changes to its published source).
  * Halloween reuses the original Marshmallow v0.2.2 animation and audio.
  */
-const VERSION='0.4.1';
+const VERSION='0.4.2';
 const STORAGE='frankys-seasonal/controller/v1';
 const PLAN='frankys-seasonal/daily-plan/v1';
 const CONFIG_CACHE='frankys-seasonal/calendar-config/v1';
@@ -318,7 +318,7 @@ class SeasonalController{
    if(this.marsh)return this.marsh;
    if(!this.marshPromise){
      window.__FRANKYS_SEASONAL_EMBEDDED__=true;
-     this.marshPromise=import('./marshmallow-engine.js?v=033-offline').then(()=>{
+     this.marshPromise=import('./marshmallow-engine.js?v=0.4.2').then(()=>{
        const engine=window.__frankysSeasonalMarshmallowEngine;
        if(!engine)throw Error('Marshmallow engine not registered');
        this.marsh=engine;
@@ -329,7 +329,7 @@ class SeasonalController{
    return this.marshPromise;
  }
  async playImageScene(scene,token){
-   const scenes=await import('./seasonal-scenes.mjs');
+   const scenes=await import('./seasonal-scenes.mjs?v=0.4.2');
    const url=scenes.getSceneURL(scene,this.config[scene+'_url']);
    if(!url)throw Error(`Scene asset is not available: ${scene}`);
    const response=await fetch(url);

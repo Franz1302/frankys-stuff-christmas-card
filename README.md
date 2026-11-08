@@ -24,6 +24,10 @@ type: custom:frankys-seasonal-card
 
 The repository URL retains the original `christmas-card` slug for safe upgrades.
 
+## Version 0.4.2
+
+**Fix for stale browser modules after HACS updates:** The bundled entry and every nested JavaScript import now carry the release version in their URLs. A regular page reload after HACS updates should load the new scripts without manually clearing the Silk/Chrome browser cache. An already open dashboard still needs to be reloaded or reopened to pick up any update. Existing settings remain unchanged.
+
 ## Version 0.4.1
 
 This release adds the annual calendar, St. Martin and St. Nicholas animations with synchronized Mirelo sound. **All calendar edits made in the card are stored per browser** (not synced between displays). Audio generated on the Mirelo Free Plan is for non-commercial use only and must visibly credit Mirelo; code remains MIT, third-party media has separate terms. See [media attribution and restrictions](SEASONAL_ASSET_SOURCES.md).

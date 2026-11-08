@@ -9,16 +9,16 @@ const entry = read('frankys-christmas-card.js');
 const seasonal = read('frankys-seasonal-card.js');
 const christmas = read('legacy-christmas-engine.js');
 const halloween = read('marshmallow-engine.js');
-assert.match(entry, /import '\.\/legacy-christmas-engine\.js'/);
-assert.match(entry, /import '\.\/frankys-seasonal-card\.js'/);
+assert.match(entry, /import '\.\/legacy-christmas-engine\.js\?v=0\.4\.2'/);
+assert.match(entry, /import '\.\/frankys-seasonal-card\.js\?v=0\.4\.2'/);
 assert.match(christmas, /define\('frankys-christmas-renderer',FrankysChristmasCard\)/);
 assert.doesNotMatch(christmas, /restoreGlobalFlightController\(\);/);
 assert.match(seasonal, /define\('frankys-christmas-card',FrankysSeasonalLegacyCard\)/);
 assert.match(seasonal, /document\.createElement\('frankys-christmas-renderer'\)/);
 assert.match(seasonal, /Franky's Christmas Card is now Franky's Seasonal Fun Card!/);
 assert.match(seasonal, /custom:frankys-seasonal-card/);
-assert.match(halloween, /import\('\.\/vendor\/three\.module\.js'\)/);
-assert.match(halloween, /import\('\.\/vendor\/GLTFLoader\.js'\)/);
+assert.match(halloween, /import\('\.\/vendor\/three\.module\.js\?v=0\.4\.2'\)/);
+assert.match(halloween, /import\('\.\/vendor\/GLTFLoader\.js\?v=0\.4\.2'\)/);
 assert.doesNotMatch(halloween, /import\(['"]https?:/);
 for (const [file, minimum] of [
  ['assets/marshmallow-animated.glb', 10000000],
@@ -35,8 +35,8 @@ for (const [file, minimum] of [
  assert(stat.size >= minimum, file + ' missing or truncated');
 }
 assert.match(read('vendor/GLTFLoader.js'), /from '\.\/three\.module\.js'/);
-assert.match(read('vendor/GLTFLoader.js'), /from '\.\/BufferGeometryUtils\.js'/);
-assert.match(read('vendor/BufferGeometryUtils.js'), /from '\.\/three\.module\.js'/);
+assert.match(read('vendor/GLTFLoader.js'), /from '\.\/BufferGeometryUtils\.js\?v=0\.4\.2'/);
+assert.match(read('vendor/BufferGeometryUtils.js'), /from '\.\/three\.module\.js\?v=0\.4\.2'/);
 
 const store = new Map([
  ['frankys-christmas-v1-default', JSON.stringify({enabled:true,sound:true,interval:'hourly',start_time:'10:00',end_time:'20:00'})]

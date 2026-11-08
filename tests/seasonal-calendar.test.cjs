@@ -3,7 +3,7 @@ const vm=require('node:vm');
 const assert=require('node:assert/strict');
 
 const source=fs.readFileSync('dist/frankys-seasonal-card.js','utf8').replace(
- "await import('./seasonal-scenes.mjs')",
+ "await import('./seasonal-scenes.mjs?v=0.4.2')",
  "await Promise.resolve({getSceneURL:(scene,custom)=>custom||(scene==='st_martin'?'/assets/St_Martin_korrigiert.webp':scene==='nikolaus'?'/assets/Nikolaus_ohne_Wasserzeichen_transparent.webp':null),getSceneSoundURL:(scene,custom)=>custom||(scene==='nikolaus'?'/assets/Nikolaus_Mirelo_Ton_15s.mp3':scene==='st_martin'?'/assets/St_Martin_Mirelo_Ton_9s.mp3':null),webpDuration:()=>100})"
 );
 function webpBuffer(){
