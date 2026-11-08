@@ -30,7 +30,7 @@ The repository URL retains the original `christmas-card` slug for safe upgrades.
 - Christmas: original Santa sleigh, bell sounds, transparent WebM and iPad/Safari WebP.
 - Halloween: animated 3D marshmallow with walking, turning and bursting into smaller marshmallows, plus individual sounds.
 - St. Martin: transparent animated WebP scene (`dist/assets/St_Martin_korrigiert.webp`) and synchronized Mirelo sound (`dist/assets/St_Martin_Mirelo_Ton_9s.mp3`), trimmed to the animation's 9.25-second duration. Sound follows the existing on/off switch; image, sound path and volume can be overridden in the visual editor.
-- Optional annual holiday calendar, configured per card in the visual editor or YAML. Enable/disable each holiday and configure inclusive yearly `MM-DD` date ranges, including ranges across New Year. On overlaps, priority is Halloween, St. Martin, St. Nicholas, then Christmas.
+- Optional annual holiday calendar, accessible directly in **Options → Annual calendar** in the card, or configurable in the visual editor/YAML. Enable/disable each holiday and configure inclusive yearly `MM-DD` date ranges, including ranges across New Year. On overlaps, priority is Halloween, St. Martin, St. Nicholas, then Christmas.
 - St. Nicholas: 15-second transparent cartoon animation with two donkeys and a synchronized Mirelo sound-effects track (`dist/assets/Nikolaus_ohne_Wasserzeichen_transparent.webp` and `dist/assets/Nikolaus_Mirelo_Ton_15s.mp3`). The soundtrack follows the card's sound toggle; the visual editor allows optional custom media paths and a volume override. A missing file displays a notice and does not affect other scenes.
 - Shared local schedule: 1–10 random appearances/day, hourly, 1–2 / 3–8 / 5–10 / 10–20 minute patterns and user-defined minute interval, all within configurable start/end times.
 - Enable, Sound, Test and Stop buttons; extra settings under **Options**.
@@ -60,7 +60,7 @@ seasonal_calendar:
     christmas: { enabled: true, start: "12-07", end: "12-26" }
 ```
 
-The card stores this calendar with its Home Assistant card configuration; the existing schedule, enable/sound buttons and manual choices remain browser-specific. A manual season selection takes precedence until the next local calendar date, when automatic selection resumes. On overlaps, priority is Halloween, St. Martin, St. Nicholas, then Christmas. No automatic appearance is played outside an enabled holiday period.
+The calendar configured in the Home Assistant visual editor/YAML remains part of the dashboard configuration. **In-card edits are saved per browser** (localStorage), take effect immediately, and override those defaults in that browser. Configure each browser separately if you use multiple displays; the existing schedule, enable/sound buttons and manual choices are also browser-specific. A manual season selection takes precedence until the next local calendar date, when automatic selection resumes. On overlaps, priority is Halloween, St. Martin, St. Nicholas, then Christmas. No automatic appearance is played outside an enabled holiday period.
 
 ## Credits and media licenses
 
