@@ -3,7 +3,7 @@
  * installed Christmas Card (no changes to its published source).
  * Halloween reuses the original Marshmallow v0.2.2 animation and audio.
  */
-const VERSION='0.4.0-rc';
+const VERSION='0.4.1';
 const STORAGE='frankys-seasonal/controller/v1';
 const PLAN='frankys-seasonal/daily-plan/v1';
 const CONFIG_CACHE='frankys-seasonal/calendar-config/v1';
