@@ -7,6 +7,7 @@ const VERSION='0.4.0-rc';
 const STORAGE='frankys-seasonal/controller/v1';
 const PLAN='frankys-seasonal/daily-plan/v1';
 const CONFIG_CACHE='frankys-seasonal/calendar-config/v1';
+const CALENDAR_OVERRIDE='frankys-seasonal/calendar-override/v1';
 const MIGRATION_NOTE='frankys-seasonal/christmas-upgrade-note/v1';
 const SCHEDULE=['daily','hourly','1-2','3-8','5-10','10-20','custom'];
 const SCENES=['christmas','halloween','st_martin','nikolaus'];
@@ -90,6 +91,19 @@ function configOf(raw={}){
  c.halloween_transparent=c.halloween_transparent!==false && c.halloween_transparent!=='false';
  return c;
 }
+function savedCardCalendar(){
+ try{
+   const value=JSON.parse(localStorage.getItem(CALENDAR_OVERRIDE)||'null');
+   if(value && typeof value==='object' && typeof value.enabled==='boolean' &&
+       value.holidays && typeof value.holidays==='object')
+     return {enabled:value.enabled,holidays:normalizeHolidays(value.holidays)};
+ }catch(e){console.warn('[Seasonal] Calendar settings unavailable',e);}
+ return null;
+}
+function withCardCalendar(raw={}){
+ const value=savedCardCalendar();
+ return configOf(value?{...raw,seasonal_calendar:value}:raw);
+}
 function stored(){
  try {
    const current=JSON.parse(localStorage.getItem(STORAGE)||'null');
@@ -169,7 +183,7 @@ class SeasonalController{
    let cached={};
    try{cached=JSON.parse(localStorage.getItem(CONFIG_CACHE)||'{}');}
    catch(e){console.warn('[Seasonal] Could not restore cached configuration',e);}
-   this.config=configOf(cached||{});
+   this.config=withCardCalendar(cached||{});
    const old=stored();
    this.state={enabled:old.enabled===true,sound:old.sound!==false,
      sound_christmas:typeof old.sound_christmas==='boolean'?old.sound_christmas:old.sound!==false,
@@ -483,6 +497,18 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .options-panel{padding:2px 0 0}
 .options-panel[hidden]{display:none}
 .options-trigger[aria-expanded="true"]{border-color:var(--fs-seasonal-accent)}
+.calendar-details{margin:12px 0;border:1px solid var(--fs-seasonal-border,#80909e);border-radius:10px;padding:10px}
+.calendar-details summary{cursor:pointer;font-weight:600;min-height:28px;list-style-position:inside}
+.calendar-master{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 0}
+.calendar-master input,.calendar-holiday-title input{width:19px;height:19px;accent-color:var(--fs-seasonal-accent)}
+.calendar-holidays{display:grid;gap:10px}
+.calendar-holiday{border:1px solid var(--fs-seasonal-border,#80909e);border-radius:10px;padding:10px}
+.calendar-holiday-title{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-weight:600}
+.calendar-dates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.calendar-dates label{display:grid;gap:4px;font-size:12px}
+.calendar-dates input{box-sizing:border-box;width:100%;min-width:0;min-height:42px;padding:8px;color:inherit;background:var(--fs-seasonal-background,#1b2836);border:1px solid var(--fs-seasonal-border,#80909e);border-radius:8px;font:inherit}
+.calendar-dates input[aria-invalid="true"]{border-color:var(--error-color,#ff8080)}
+.calendar-message{font-size:12px;opacity:.8;margin-top:10px}
 `;
 class FrankysSeasonalCard extends HTMLElement{
  constructor(){super();this.attachShadow({mode:'open'});this._listener=()=>this.update();this._language='';}
@@ -493,7 +519,7 @@ class FrankysSeasonalCard extends HTMLElement{
    this._language=lang;
    this.render(!!changed);
  }
- setConfig(raw){this.config=configOf(raw);ctrl.configure(this.config);this.render(true);}
+ setConfig(raw){this.config=withCardCalendar(raw);ctrl.configure(this.config);this.render(true);}
  connectedCallback(){window.addEventListener('frankys-seasonal-changed',this._listener);this.render();}
  disconnectedCallback(){window.removeEventListener('frankys-seasonal-changed',this._listener);}
  getCardSize(){return 3;}
@@ -505,6 +531,18 @@ class FrankysSeasonalCard extends HTMLElement{
    if(!force && this.shadowRoot.getElementById('season')){this.update();return;}
    const preview=this.stateNeedsPreview();
    const optionsOpen=this.shadowRoot.getElementById('options')?.getAttribute('aria-expanded')==='true';
+   const calendarOpen=this.shadowRoot.getElementById('calendar-details')?.open===true;
+   const calendarLabels={halloween:'Halloween',st_martin:'St. Martin',nikolaus:tr('Nikolaus','St. Nicholas'),christmas:tr('Weihnachten','Christmas')};
+   const calendarRows=HOLIDAY_ORDER.map(id=>{
+     const holiday=this.config.seasonal_calendar.holidays[id];
+     const format=value=>value.slice(3)+'.'+value.slice(0,2);
+     return `<section class="calendar-holiday">
+       <label class="calendar-holiday-title"><input type="checkbox" data-calendar-holiday="${id}" data-field="enabled" ${holiday.enabled?'checked':''}><span>${calendarLabels[id]}</span></label>
+       <div class="calendar-dates">
+         <label>${tr('Von (TT.MM)','From (DD.MM)')}<input type="text" maxlength="5" inputmode="numeric" placeholder="TT.MM" data-calendar-holiday="${id}" data-field="start" value="${format(holiday.start)}"></label>
+         <label>${tr('Bis (TT.MM)','Until (DD.MM)')}<input type="text" maxlength="5" inputmode="numeric" placeholder="TT.MM" data-calendar-holiday="${id}" data-field="end" value="${format(holiday.end)}"></label>
+       </div></section>`;
+   }).join('');
    this.shadowRoot.innerHTML=`<style>${style}</style><style id="seasonal-custom-style"></style><ha-card>
      <div class="heading"><div class="name"></div><span class="status"></span></div>
      <div id="migration-note" class="migration-note" hidden role="status">
@@ -532,6 +570,12 @@ class FrankysSeasonalCard extends HTMLElement{
      </div>
      <div id="custom-line" class="line custom-line" hidden><label for="custom_minutes">${tr('Eigenes Intervall','Custom interval')}</label><input type="number" id="custom_minutes" min="15" max="1440" step="1" inputmode="numeric"><span>${tr('Minuten','minutes')}</span></div>
      <div class="line"><label for="from">${tr('Von','From')}</label><input id="from" type="time"><label for="to">${tr('Bis','To')}</label><input id="to" type="time"></div>
+     <details id="calendar-details" class="calendar-details" ${calendarOpen?'open':''}>
+       <summary>${tr('Jahreskalender','Annual calendar')}</summary>
+       <label class="calendar-master"><input type="checkbox" id="calendar-enabled" ${this.config.seasonal_calendar.enabled?'checked':''}><span>${tr('Automatische Feiertagsauswahl','Automatic holiday selection')}</span></label>
+       <div class="calendar-holidays">${calendarRows}</div>
+       <div id="calendar-message" class="calendar-message">${tr('Änderungen werden in diesem Browser gespeichert.','Changes are saved in this browser.')}</div>
+     </details>
      ${preview?'<div id="preview" style="position:relative;width:100%;height:250px;min-height:200px;overflow:hidden;background:#111c28;border-radius:12px;margin-top:10px"></div>':''}
      <div class="note"></div>
      </div>
@@ -550,6 +594,34 @@ class FrankysSeasonalCard extends HTMLElement{
      panel.hidden=!open;
      $('options').setAttribute('aria-expanded',String(open));
    };
+   const updateCalendar=element=>{
+     const current=ctrl.config.seasonal_calendar;
+     let next;
+     if(element.id==='calendar-enabled')next={...current,enabled:element.checked};
+     else{
+       const {calendarHoliday:id,field}=element.dataset;
+       if(!HOLIDAY_ORDER.includes(id)||!['enabled','start','end'].includes(field))return;
+       let value=element.checked;
+       if(field!=='enabled'){
+         const raw=element.value.trim();
+         const iso=/^\d{2}\.\d{2}$/.test(raw)?raw.slice(3)+'-'+raw.slice(0,2):'';
+         if(!iso||cleanAnnualDate(iso,'invalid')!==iso){
+           element.setAttribute('aria-invalid','true');
+           $('calendar-message').textContent=tr('Ungültiges Datum (TT.MM).','Invalid date (DD.MM).');
+           return;
+         }
+         element.removeAttribute('aria-invalid');
+         value=iso;
+       }
+       next={...current,holidays:{...current.holidays,[id]:{...current.holidays[id],[field]:value}}};
+     }
+     const saved=this.saveCalendarFromCard(next);
+     $('calendar-message').textContent=saved
+       ?tr('Im Browser gespeichert.','Saved in this browser.')
+       :tr('Speichern fehlgeschlagen.','Could not save.');
+   };
+   $('calendar-enabled').onchange=e=>updateCalendar(e.currentTarget);
+   this.shadowRoot.querySelectorAll('[data-calendar-holiday]').forEach(el=>el.onchange=e=>updateCalendar(e.currentTarget));
    $('options').onkeydown=e=>{
      if(e.key==='Escape'){e.preventDefault();$('options-panel').hidden=true;$('options').setAttribute('aria-expanded','false');}
    };
@@ -575,6 +647,14 @@ class FrankysSeasonalCard extends HTMLElement{
    // Set design variables only on this card; other Lovelace cards are untouched.
    this.applyDesign();
    this.update();
+ }
+ saveCalendarFromCard(calendar){
+   const cleaned={enabled:bool(calendar.enabled,false),holidays:normalizeHolidays(calendar.holidays)};
+   try{localStorage.setItem(CALENDAR_OVERRIDE,JSON.stringify(cleaned));}
+   catch(e){console.warn('[Seasonal] Could not persist annual calendar',e);return false;}
+   this.config=configOf({...this.config,seasonal_calendar:cleaned});
+   ctrl.configure(this.config);
+   return true;
  }
  applyDesign(){
    const card=this.shadowRoot.querySelector('ha-card');
@@ -617,8 +697,17 @@ class FrankysSeasonalCard extends HTMLElement{
    if(this.shadowRoot.activeElement!==$('to'))$('to').value=s.end;
    $('custom-line').hidden=s.mode!=='custom';
    if(this.shadowRoot.activeElement!==$('custom_minutes'))$('custom_minutes').value=String(s.interval_minutes);
+   const calendar=ctrl.config.seasonal_calendar;
+   if($('calendar-enabled'))$('calendar-enabled').checked=calendar.enabled;
+   for(const field of this.shadowRoot.querySelectorAll('[data-calendar-holiday]')){
+     if(field===this.shadowRoot.activeElement)continue;
+     const entry=calendar.holidays[field.dataset.calendarHoliday];
+     if(!entry)continue;
+     field[field.type==='checkbox'?'checked':'value']=field.type==='checkbox'
+       ?entry.enabled:entry[field.dataset.field].slice(3)+'.'+entry[field.dataset.field].slice(0,2);
+   }
    const n=this.shadowRoot.querySelector('.note');
-   n.textContent=ctrl.error||tr('Die manuelle Auswahl bleibt bis zum nächsten Kalendertag bestehen. Der Jahreskalender ist optional und wird im visuellen Editor konfiguriert.','Manual selection remains until the next calendar day. The optional annual calendar is configured in the visual editor.');
+   n.textContent=ctrl.error||tr('Die manuelle Auswahl bleibt bis zum nächsten Kalendertag bestehen. Der Jahreskalender ist direkt unter Optionen einstellbar.','Manual selection remains until the next calendar day. The annual calendar can be configured under Options.');
    n.classList.toggle('error',!!ctrl.error);
  }
 }
