@@ -29,6 +29,7 @@ jobs:
           node tests/audio.test.cjs
           node tests/editor.test.cjs
           node tests/global-scheduler.test.cjs
+          node tests/ha-test-installation.test.cjs
           node tests/seasonal-fun.test.cjs
           node tests/seasonal-calendar.test.cjs
           node tests/audio-browser.test.cjs
