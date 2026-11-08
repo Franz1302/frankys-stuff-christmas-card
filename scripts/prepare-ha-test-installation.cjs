@@ -22,6 +22,7 @@ const replacements=[
  ['frankys-seasonal/controller/v1','frankys-seasonal-test/controller/v1'],
  ['frankys-seasonal/daily-plan/v1','frankys-seasonal-test/daily-plan/v1'],
  ['frankys-seasonal/calendar-config/v1','frankys-seasonal-test/calendar-config/v1'],
+ ['frankys-seasonal/calendar-override/v1','frankys-seasonal-test/calendar-override/v1'],
  ['frankys-seasonal/christmas-upgrade-note/v1','frankys-seasonal-test/christmas-upgrade-note/v1'],
  ['frankys-christmas-v1-','frankys-seasonal-test-christmas-v1-'],
  ['frankys-seasonal-changed','frankys-seasonal-test-changed'],
