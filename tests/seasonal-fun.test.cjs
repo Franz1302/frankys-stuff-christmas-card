@@ -34,7 +34,7 @@ for (const [file, minimum] of [
  const stat = fs.statSync(path.join(root,'dist',file));
  assert(stat.size >= minimum, file + ' missing or truncated');
 }
-assert.match(read('vendor/GLTFLoader.js'), /from '\.\/three\.module\.js'/);
+assert.match(read('vendor/GLTFLoader.js'), /from '\.\/three\.module\.js\?v=0\.4\.2'/);
 assert.match(read('vendor/GLTFLoader.js'), /from '\.\/BufferGeometryUtils\.js\?v=0\.4\.2'/);
 assert.match(read('vendor/BufferGeometryUtils.js'), /from '\.\/three\.module\.js\?v=0\.4\.2'/);
 
