@@ -20,10 +20,10 @@ const context={
   navigator:{language:'de-AT'},
   HTMLElement:FakeElement,CustomEvent:FakeEvent
 };
-vm.runInNewContext(fs.readFileSync('dist/frankys-christmas-card.js','utf8'),context);
-const Card=registered['frankys-christmas-card'],Editor=registered['frankys-christmas-card-editor'];
+vm.runInNewContext(fs.readFileSync('dist/legacy-christmas-engine.js','utf8'),context);
+const Card=registered['frankys-christmas-renderer'],Editor=registered['frankys-christmas-renderer-editor'];
 assert(Card&&Editor,'Both custom elements must be registered');
-assert.deepEqual(JSON.parse(JSON.stringify(Card.prototype.getGridOptions())),{columns:12,min_columns:6,rows:'auto'});
+assert.deepEqual(JSON.parse(JSON.stringify(Card.prototype.getGridOptions.call({}))),{columns:12,min_columns:6,rows:'auto'});
 assert.equal(Card.prototype.getCardSize.call({_config:{layout_mode:'compact'}}),4);
 assert.equal(Card.getConfigElement().type,'frankys-christmas-card-editor');
 const editor=new Editor();
@@ -40,7 +40,7 @@ assert.equal(editor.lastEvent.detail.config.duration,12);
 const previous=editor.lastEvent;
 editor._changed({getAttribute:()=> 'schedule_start',value:'23:00'});
 assert.equal(editor.lastEvent,previous,'Invalid inverted time window must not emit event');
-const code=fs.readFileSync('dist/frankys-christmas-card.js','utf8');
+const code=fs.readFileSync('dist/legacy-christmas-engine.js','utf8');
 assert.match(code,/min-height:44px/);
 assert.match(code,/container-type:inline-size/);
 console.log('OK: config editor, valid and invalid times, layout controls, grid sizing, responsive CSS');

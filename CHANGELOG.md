@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — annual seasonal calendar and St. Martin scene
+- Optional per-card annual calendar with independent holiday toggles and configurable, inclusive recurring date ranges
+- Manual scene selection remains available and overrides the calendar for the current local date
+- Added St. Martin WebP scene support and a configurable St. Nicholas WebP scene path, without placeholder media
+- Existing browser-local schedules, HACS entry paths, Christmas/Halloween playback, and editor controls retained
+- Regression tests for calendar transitions, overlaps, disabled holidays, manual selection, missing media, and overlay cleanup
+
 ## v0.2.6 — Reliable Santa audio across dashboard flights
 - Reusable, locally bundled Howler.js Web Audio for Santa voice, with audio unlocking on card buttons
 - Global scheduler preloads audio so subsequent dashboard interaction can unlock future automatic flights

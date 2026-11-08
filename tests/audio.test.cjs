@@ -2,7 +2,7 @@
 const fs=require('node:fs');
 const vm=require('node:vm');
 const assert=require('node:assert/strict');
-const source=fs.readFileSync('dist/frankys-christmas-card.js','utf8');
+const source=fs.readFileSync('dist/legacy-christmas-engine.js','utf8');
 let nextId=0,unlocks=0,htmlAudioCount=0;
 const howls=[],timers=new Map(),registry={},store=new Map();
 class FakeNode {
@@ -36,7 +36,7 @@ const context={
  Audio:class{constructor(){htmlAudioCount++;throw Error('Do not use direct HTML Audio');}}
 };
 vm.runInNewContext(source,context);
-const Card=registry['frankys-christmas-card'];
+const Card=registry['frankys-christmas-renderer'];
 assert(Card,'Card registered');
 Card.prototype._render=function(){};
 const card=new Card();
