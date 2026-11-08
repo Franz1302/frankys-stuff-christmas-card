@@ -21,7 +21,7 @@ const DEFAULT={
  type:'custom:frankys-seasonal-card',title:"Franky's Seasonal Fun Card",season:'christmas',
  schedule_mode:'daily',schedule_start:'09:00',schedule_end:'22:00',interval_minutes:60,
  seasonal_calendar:{enabled:false,holidays:DEFAULT_HOLIDAYS},
- st_martin_url:'',nikolaus_url:'',nikolaus_sound_url:'',nikolaus_volume:.8,
+ st_martin_url:'',st_martin_sound_url:'',st_martin_volume:.8,nikolaus_url:'',nikolaus_sound_url:'',nikolaus_volume:.8,
  christmas_duration:10,christmas_size:60,christmas_volume:.55,bells_volume:.78,
  christmas_video:'',christmas_sound:'',christmas_bells:'',christmas_ios_video:'',christmas_fallback:'',
  halloween_fps:30,halloween_particles:40,halloween_size:1,halloween_direction:'left',
@@ -69,7 +69,7 @@ function configOf(raw={}){
  if(mins(c.schedule_start)>=mins(c.schedule_end)){
    c.schedule_start='09:00';c.schedule_end='22:00';
  }
- const ranges={interval_minutes:[15,1440],christmas_duration:[4,30],christmas_size:[20,95],christmas_volume:[0,1],bells_volume:[0,1],nikolaus_volume:[0,1],halloween_fps:[24,60],halloween_particles:[24,60],halloween_size:[.6,1.6],halloween_render_scale:[.5,1],halloween_volume:[0,1],halloween_laugh_volume:[0,1],halloween_pop_volume:[0,1],halloween_bubbles_volume:[0,1]};
+ const ranges={interval_minutes:[15,1440],christmas_duration:[4,30],christmas_size:[20,95],christmas_volume:[0,1],bells_volume:[0,1],st_martin_volume:[0,1],nikolaus_volume:[0,1],halloween_fps:[24,60],halloween_particles:[24,60],halloween_size:[.6,1.6],halloween_render_scale:[.5,1],halloween_volume:[0,1],halloween_laugh_volume:[0,1],halloween_pop_volume:[0,1],halloween_bubbles_volume:[0,1]};
  for(const [k,[a,b]] of Object.entries(ranges))c[k]=clamp(c[k],a,b,DEFAULT[k]);
  c.halloween_fps=[24,30,45,60].includes(c.halloween_fps)?c.halloween_fps:30;
  c.halloween_particles=[24,40,60].includes(c.halloween_particles)?c.halloween_particles:40;
@@ -84,7 +84,7 @@ function configOf(raw={}){
  c.design_custom_css=typeof c.design_custom_css==='string'?c.design_custom_css.slice(0,10000):'';
  const calendar=c.seasonal_calendar&&typeof c.seasonal_calendar==='object'?c.seasonal_calendar:{};
  c.seasonal_calendar={enabled:bool(calendar.enabled,false),holidays:normalizeHolidays(calendar.holidays)};
- for(const key of ['christmas_video','christmas_sound','christmas_bells','christmas_ios_video','christmas_fallback','halloween_laugh_url','halloween_pop_url','halloween_bubbles_url','st_martin_url','nikolaus_url','nikolaus_sound_url'])
+ for(const key of ['christmas_video','christmas_sound','christmas_bells','christmas_ios_video','christmas_fallback','halloween_laugh_url','halloween_pop_url','halloween_bubbles_url','st_martin_url','st_martin_sound_url','nikolaus_url','nikolaus_sound_url'])
    c[key]=typeof c[key]==='string'&&!/^(?:data:|javascript:|\/\/)/i.test(c[key].trim())?c[key].trim():'';
  c.halloween_overlay=c.halloween_overlay!==false && c.halloween_overlay!=='false';
  c.halloween_transparent=c.halloween_transparent!==false && c.halloween_transparent!=='false';
@@ -337,12 +337,13 @@ class SeasonalController{
    image.src=this.imageURL;
    await loaded;
    if(this.generation!==token)return null;
-   if(scene==='nikolaus' && this.state.sound){
-     const soundURL=scenes.getSceneSoundURL(scene,this.config.nikolaus_sound_url);
+   if(this.state.sound && (scene==='st_martin'||scene==='nikolaus')){
+     const customSound=scene==='st_martin'?this.config.st_martin_sound_url:this.config.nikolaus_sound_url;
+     const soundURL=scenes.getSceneSoundURL(scene,customSound);
      if(soundURL && typeof Audio!=='undefined'){
        const audio=new Audio(soundURL);
        audio.preload='auto';
-       audio.volume=this.config.nikolaus_volume;
+       audio.volume=scene==='st_martin'?this.config.st_martin_volume:this.config.nikolaus_volume;
        this.sceneAudio=audio;
        try{
          const started=audio.play();
@@ -665,6 +666,8 @@ class FrankysSeasonalEditor extends HTMLElement{
    }
    html.push('</details>');
    str('st_martin_url',tr('St.-Martin-WebP-Pfad (optional)','St. Martin WebP path (optional)'));
+   str('st_martin_sound_url',tr('St.-Martin-Tonspur (optional)','St. Martin soundtrack (optional)'));
+   num('st_martin_volume',tr('St.-Martin-Lautstärke (0–1)','St. Martin volume (0–1)'),0,1,.05);
    str('nikolaus_url',tr('Nikolaus-WebP-Pfad (optional)','St. Nicholas WebP path (optional)'));
    str('nikolaus_sound_url',tr('Nikolaus-Tonspur (optional)','St. Nicholas soundtrack (optional)'));
    num('nikolaus_volume',tr('Nikolaus-Lautstärke (0–1)','St. Nicholas volume (0–1)'),0,1,.05);

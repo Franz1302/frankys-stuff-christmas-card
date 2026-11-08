@@ -4,6 +4,7 @@ const SCENES=Object.freeze({
 });
 
 const SOUNDS=Object.freeze({
+ st_martin:new URL('./assets/St_Martin_Mirelo_Ton_9s.mp3',import.meta.url).href,
  nikolaus:new URL('./assets/Nikolaus_Mirelo_Ton_15s.mp3',import.meta.url).href,
 });
 

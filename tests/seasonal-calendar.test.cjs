@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 
 const source=fs.readFileSync('dist/frankys-seasonal-card.js','utf8').replace(
  "await import('./seasonal-scenes.mjs')",
- "await Promise.resolve({getSceneURL:(scene,custom)=>custom||(scene==='st_martin'?'/assets/St_Martin_korrigiert.webp':scene==='nikolaus'?'/assets/Nikolaus_ohne_Wasserzeichen_transparent.webp':null),getSceneSoundURL:(scene,custom)=>custom||(scene==='nikolaus'?'/assets/Nikolaus_Mirelo_Ton_15s.mp3':null),webpDuration:()=>100})"
+ "await Promise.resolve({getSceneURL:(scene,custom)=>custom||(scene==='st_martin'?'/assets/St_Martin_korrigiert.webp':scene==='nikolaus'?'/assets/Nikolaus_ohne_Wasserzeichen_transparent.webp':null),getSceneSoundURL:(scene,custom)=>custom||(scene==='nikolaus'?'/assets/Nikolaus_Mirelo_Ton_15s.mp3':scene==='st_martin'?'/assets/St_Martin_Mirelo_Ton_9s.mp3':null),webpDuration:()=>100})"
 );
 function webpBuffer(){
  const bytes=new Uint8Array(36),view=new DataView(bytes.buffer);
@@ -174,8 +174,12 @@ async function playbackTests(){
  assert.equal(playable.controller.busy,true,'Manual test playback works when calendar entry is disabled');
  assert.equal(playable.requests[0],'/assets/St_Martin_korrigiert.webp','St. Martin loads its default HACS asset path');
  assert.equal(playable.overlays.length,1);
+ assert.equal(playable.audios.length,1,'St. Martin Mirelo soundtrack starts with the animation');
+ assert.equal(playable.audios[0].src,'/assets/St_Martin_Mirelo_Ton_9s.mp3');
+ assert.equal(playable.audios[0].played,true);
  assert.match(playable.overlays[0].style.cssText,/position:fixed.*object-fit:contain/);
  playable.controller.stop();
+ assert.equal(playable.audios[0].paused,true,'St. Martin soundtrack stops when animation stops');
  assert.equal(playable.overlays.length,0,'Stop removes the scene overlay');
  assert.equal(playable.revoked,1,'Stop revokes the temporary animation URL');
  await playable.controller.play();
@@ -209,7 +213,7 @@ async function playbackTests(){
  assert.match(scenes.getSceneURL('st_martin'),/assets\/St_Martin_korrigiert\.webp$/);
  assert.match(scenes.getSceneURL('nikolaus'),/assets\/Nikolaus_ohne_Wasserzeichen_transparent\.webp$/,'Nikolaus has a bundled scene URL');
  assert.match(scenes.getSceneSoundURL('nikolaus'),/assets\/Nikolaus_Mirelo_Ton_15s\.mp3$/,'Nikolaus has a bundled Mirelo track');
- assert.equal(scenes.getSceneSoundURL('st_martin'),null,'St. Martin has no bundled soundtrack');
+ assert.match(scenes.getSceneSoundURL('st_martin'),/assets\/St_Martin_Mirelo_Ton_9s\.mp3$/,'St. Martin has a bundled Mirelo soundtrack');
  assert.equal(scenes.getSceneURL('nikolaus','/local/nikolaus.webp'),'/local/nikolaus.webp','St. Nicholas path is configurable');
  assert.equal(scenes.webpDuration(webpBuffer()),5,'Animated WebP duration is derived from its frame timings');
  assert.throws(()=>scenes.webpDuration(new ArrayBuffer(4)),/Invalid WebP/);
@@ -225,6 +229,13 @@ async function playbackTests(){
   assert.equal(missing.overlays.length,0,'Missing media creates no overlay');
  }
  await playbackTests();
+ const silentMartin=createController({st_martin:holiday(false,'11-11','11-11')});
+ silentMartin.document.hidden=false;
+ silentMartin.controller.setState({season:'st_martin'});
+ silentMartin.controller.setState({sound:false});
+ await silentMartin.controller.play();
+ assert.equal(silentMartin.audios.length,0,'St. Martin respects global sound toggle');
+ silentMartin.controller.stop();
  const nikolaus=createController({nikolaus:holiday(false,'12-06','12-06')});
  nikolaus.document.hidden=false;
  nikolaus.controller.setState({season:'nikolaus'});
