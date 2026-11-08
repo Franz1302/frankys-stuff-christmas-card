@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.4.1 — Annual calendar, St. Martin and St. Nicholas (2026-11-08)
+- New annual calendar with separate enable switches and editable date windows for Halloween, St. Martin, St. Nicholas and Christmas; inclusive annual ranges, including New Year crossings
+- Calendar can be edited inside the existing Options dropdown without entering dashboard edit mode; changes are browser-local, saved between reloads and do not change HA card YAML
+- Manual season selection overrides automatic calendar choice until the next local calendar date
+- Bundled St. Martin transparent animated WebP (9.25 s) with a corrected synchronized Mirelo AI soundtrack
+- Bundled St. Nicholas transparent animated WebP (~15 s) and its synchronized Mirelo AI soundtrack; retains the intentional second donkey joke
+- Optional custom animation/audio URLs and sound-volume configuration, existing sound toggle applies
+- Existing HACS resource filename, Christmas/Halloween behavior, legacy Lovelace card aliases and local schedules retained
+- Sound provider credits and third-party media limitations documented in README and SEASONAL_ASSET_SOURCES.md
+- Automated JS, calendar, browser and HACS validation tests
+
 ## v0.2.6 — Reliable Santa audio across dashboard flights
 - Reusable, locally bundled Howler.js Web Audio for Santa voice, with audio unlocking on card buttons
 - Global scheduler preloads audio so subsequent dashboard interaction can unlock future automatic flights

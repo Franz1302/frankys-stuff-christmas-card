@@ -3,15 +3,26 @@
  * installed Christmas Card (no changes to its published source).
  * Halloween reuses the original Marshmallow v0.2.2 animation and audio.
  */
-const VERSION='0.4.0-rc';
+const VERSION='0.4.1';
 const STORAGE='frankys-seasonal/controller/v1';
 const PLAN='frankys-seasonal/daily-plan/v1';
+const CONFIG_CACHE='frankys-seasonal/calendar-config/v1';
+const CALENDAR_OVERRIDE='frankys-seasonal/calendar-override/v1';
 const MIGRATION_NOTE='frankys-seasonal/christmas-upgrade-note/v1';
 const SCHEDULE=['daily','hourly','1-2','3-8','5-10','10-20','custom'];
-const SCENES=['christmas','halloween'];
+const SCENES=['christmas','halloween','st_martin','nikolaus'];
+const HOLIDAY_ORDER=['halloween','st_martin','nikolaus','christmas'];
+const DEFAULT_HOLIDAYS={
+ halloween:{enabled:true,start:'10-25',end:'10-31'},
+ st_martin:{enabled:true,start:'11-08',end:'11-11'},
+ nikolaus:{enabled:true,start:'12-01',end:'12-06'},
+ christmas:{enabled:true,start:'12-07',end:'12-26'},
+};
 const DEFAULT={
  type:'custom:frankys-seasonal-card',title:"Franky's Seasonal Fun Card",season:'christmas',
  schedule_mode:'daily',schedule_start:'09:00',schedule_end:'22:00',interval_minutes:60,
+ seasonal_calendar:{enabled:false,holidays:DEFAULT_HOLIDAYS},
+ st_martin_url:'',st_martin_sound_url:'',st_martin_volume:.8,nikolaus_url:'',nikolaus_sound_url:'',nikolaus_volume:.8,
  christmas_duration:10,christmas_size:60,christmas_volume:.55,bells_volume:.78,
  christmas_video:'',christmas_sound:'',christmas_bells:'',christmas_ios_video:'',christmas_fallback:'',
  halloween_fps:30,halloween_particles:40,halloween_size:1,halloween_direction:'left',
@@ -26,6 +37,21 @@ const DEFAULT={
 const clamp=(n,lo,hi,def)=>Number.isFinite(+n)?Math.max(lo,Math.min(hi,+n)):def;
 const cleanClock=(s,def)=>typeof s==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(s)?s:def;
 const mins=s=>Number(s.slice(0,2))*60+Number(s.slice(3));
+const cleanAnnualDate=(s,def)=>{
+ if(typeof s!=='string'||! /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(s))return def;
+ const [month,day]=s.split('-').map(Number),date=new Date(2000,month-1,day);
+ return date.getMonth()===month-1&&date.getDate()===day?s:def;
+};
+const bool=(v,def=false)=>v===true||v==='true'?true:v===false||v==='false'?false:def;
+function normalizeHolidays(value){
+ const source=value&&typeof value==='object'?value:{},holidays={};
+ for(const id of HOLIDAY_ORDER){
+   const raw=source[id]&&typeof source[id]==='object'?source[id]:{},fallback=DEFAULT_HOLIDAYS[id];
+   holidays[id]={enabled:bool(raw.enabled,fallback.enabled),
+     start:cleanAnnualDate(raw.start,fallback.start),end:cleanAnnualDate(raw.end,fallback.end)};
+ }
+ return holidays;
+}
 const de=()=>/^de(?:-|$)/i.test((window.__frankysHassLang||navigator.language||'de'));
 const tr=(g,e)=>de()?g:e;
 function configOf(raw={}){
@@ -44,7 +70,7 @@ function configOf(raw={}){
  if(mins(c.schedule_start)>=mins(c.schedule_end)){
    c.schedule_start='09:00';c.schedule_end='22:00';
  }
- const ranges={interval_minutes:[15,1440],christmas_duration:[4,30],christmas_size:[20,95],christmas_volume:[0,1],bells_volume:[0,1],halloween_fps:[24,60],halloween_particles:[24,60],halloween_size:[.6,1.6],halloween_render_scale:[.5,1],halloween_volume:[0,1],halloween_laugh_volume:[0,1],halloween_pop_volume:[0,1],halloween_bubbles_volume:[0,1]};
+ const ranges={interval_minutes:[15,1440],christmas_duration:[4,30],christmas_size:[20,95],christmas_volume:[0,1],bells_volume:[0,1],st_martin_volume:[0,1],nikolaus_volume:[0,1],halloween_fps:[24,60],halloween_particles:[24,60],halloween_size:[.6,1.6],halloween_render_scale:[.5,1],halloween_volume:[0,1],halloween_laugh_volume:[0,1],halloween_pop_volume:[0,1],halloween_bubbles_volume:[0,1]};
  for(const [k,[a,b]] of Object.entries(ranges))c[k]=clamp(c[k],a,b,DEFAULT[k]);
  c.halloween_fps=[24,30,45,60].includes(c.halloween_fps)?c.halloween_fps:30;
  c.halloween_particles=[24,40,60].includes(c.halloween_particles)?c.halloween_particles:40;
@@ -57,11 +83,26 @@ function configOf(raw={}){
    c[k]=typeof c[k]==='string' && /^#[a-fA-F0-9]{6}$/.test(c[k])?c[k]:'';
  }
  c.design_custom_css=typeof c.design_custom_css==='string'?c.design_custom_css.slice(0,10000):'';
- for(const key of ['christmas_video','christmas_sound','christmas_bells','christmas_ios_video','christmas_fallback','halloween_laugh_url','halloween_pop_url','halloween_bubbles_url'])
+ const calendar=c.seasonal_calendar&&typeof c.seasonal_calendar==='object'?c.seasonal_calendar:{};
+ c.seasonal_calendar={enabled:bool(calendar.enabled,false),holidays:normalizeHolidays(calendar.holidays)};
+ for(const key of ['christmas_video','christmas_sound','christmas_bells','christmas_ios_video','christmas_fallback','halloween_laugh_url','halloween_pop_url','halloween_bubbles_url','st_martin_url','st_martin_sound_url','nikolaus_url','nikolaus_sound_url'])
    c[key]=typeof c[key]==='string'&&!/^(?:data:|javascript:|\/\/)/i.test(c[key].trim())?c[key].trim():'';
  c.halloween_overlay=c.halloween_overlay!==false && c.halloween_overlay!=='false';
  c.halloween_transparent=c.halloween_transparent!==false && c.halloween_transparent!=='false';
  return c;
+}
+function savedCardCalendar(){
+ try{
+   const value=JSON.parse(localStorage.getItem(CALENDAR_OVERRIDE)||'null');
+   if(value && typeof value==='object' && typeof value.enabled==='boolean' &&
+       value.holidays && typeof value.holidays==='object')
+     return {enabled:value.enabled,holidays:normalizeHolidays(value.holidays)};
+ }catch(e){console.warn('[Seasonal] Calendar settings unavailable',e);}
+ return null;
+}
+function withCardCalendar(raw={}){
+ const value=savedCardCalendar();
+ return configOf(value?{...raw,seasonal_calendar:value}:raw);
 }
 function stored(){
  try {
@@ -94,6 +135,11 @@ function legacyChristmasInstalledHere(){
 function dismissMigrationNotice(){try{localStorage.setItem(MIGRATION_NOTE,'dismissed')}catch(e){}}
 function save(st){try{localStorage.setItem(STORAGE,JSON.stringify(st))}catch{}}
 function dayKey(date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`}
+function annualDay(date){return (date.getMonth()+1)*100+date.getDate()}
+function inAnnualRange(date,start,end){
+ const current=annualDay(date),from=Number(start.slice(0,2))*100+Number(start.slice(3)),to=Number(end.slice(0,2))*100+Number(end.slice(3));
+ return from<=to?current>=from&&current<=to:current>=from||current<=to;
+}
 function scheduled(now,s,c){
  const nowMs=now.getTime(),[sh,sm]=s.start.split(':').map(Number),[eh,em]=s.end.split(':').map(Number);
  const low=new Date(now);low.setHours(sh,sm,0,0);
@@ -134,31 +180,40 @@ function scheduled(now,s,c){
 }
 class SeasonalController{
  constructor(){
-   this.config=configOf();
+   let cached={};
+   try{cached=JSON.parse(localStorage.getItem(CONFIG_CACHE)||'{}');}
+   catch(e){console.warn('[Seasonal] Could not restore cached configuration',e);}
+   this.config=withCardCalendar(cached||{});
    const old=stored();
    this.state={enabled:old.enabled===true,sound:old.sound!==false,
      sound_christmas:typeof old.sound_christmas==='boolean'?old.sound_christmas:old.sound!==false,
      sound_halloween:typeof old.sound_halloween==='boolean'?old.sound_halloween:old.sound!==false,
      season:SCENES.includes(old.season)?old.season:'christmas',
+     manual_season:SCENES.includes(old.manual_season)?old.manual_season:(SCENES.includes(old.season)?old.season:'christmas'),
+     manual_date:typeof old.manual_date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(old.manual_date)?old.manual_date:'',
      mode:SCHEDULE.includes(old.mode)?old.mode:'daily',
      start:cleanClock(old.start,'09:00'),end:cleanClock(old.end,'22:00'),
      interval_minutes:clamp(old.interval_minutes,15,1440,this.config.interval_minutes)};
-   this.timer=null;this.busy=false;this.xmas=null;this.marsh=null;this.marshPromise=null;
-   this.generation=0;this.previewHost=null;
+   this.timer=null;this.busy=false;this.xmas=null;this.marsh=null;this.marshPromise=null;this.imageScene=null;this.imageResolve=null;this.sceneAudio=null;
+   this.generation=0;this.previewHost=null;this.imageURL=null;
    this.wired=false;
-   this.onVisible=()=>{if(document.hidden)this.stop();this.schedule();};
+   this.onVisible=()=>{if(document.hidden)this.stop();else this.syncCalendar();this.schedule();};
    document.addEventListener('visibilitychange',this.onVisible);
    // Like the former Christmas Card, resume the saved schedule on any view,
    // even when its control card is not currently displayed.
-   if(this.state.enabled)this.schedule();
+   this.syncCalendar();
+   if(this.state.enabled||this.config.seasonal_calendar.enabled)this.schedule();
  }
  changed(){window.dispatchEvent(new Event('frankys-seasonal-changed'));}
  configure(raw){
    const prev=this.config;this.config=configOf(raw);
    if(!this.wired){
      const old=stored();
-     if(!SCENES.includes(old.season))this.state.season=this.config.season;
-     this.state.sound=this.state.season==='christmas'?this.state.sound_christmas:this.state.sound_halloween;
+     if(!SCENES.includes(old.season)){
+       this.state.season=this.config.season;
+       if(!SCENES.includes(old.manual_season))this.state.manual_season=this.config.season;
+     }
+     this.state.sound=this.state.season==='halloween'?this.state.sound_halloween:this.state.sound_christmas;
      if(!SCHEDULE.includes(old.mode))this.state.mode=this.config.schedule_mode;
      if(!customElements.get('frankys-christmas-renderer')){
        customElements.whenDefined('frankys-christmas-renderer').then(()=>this.silenceLegacyChristmas());
@@ -167,7 +222,10 @@ class SeasonalController{
      if(!old.end)this.state.end=this.config.schedule_end;
      if(!Number.isFinite(Number(old.interval_minutes)))this.state.interval_minutes=this.config.interval_minutes;
    }else{
-     if(prev.season!==this.config.season)this.state.season=this.config.season;
+     if(prev.season!==this.config.season){
+       this.state.season=this.config.season;
+       this.state.manual_season=this.config.season;
+     }
      if(prev.schedule_mode!==this.config.schedule_mode)this.state.mode=this.config.schedule_mode;
      if(prev.schedule_start!==this.config.schedule_start)this.state.start=this.config.schedule_start;
      if(prev.schedule_end!==this.config.schedule_end)this.state.end=this.config.schedule_end;
@@ -176,7 +234,9 @@ class SeasonalController{
    if(mins(this.state.start)>=mins(this.state.end)){
      this.state.start=this.config.schedule_start;this.state.end=this.config.schedule_end;
    }
-   this.wired=true;save(this.state);
+   this.wired=true;this.syncCalendar();save(this.state);
+   try{localStorage.setItem(CONFIG_CACHE,JSON.stringify(this.config));}
+   catch(e){console.warn('[Seasonal] Could not cache configuration',e);}
    this.silenceLegacyChristmas();this.schedule();this.changed();
    if(this.state.season==='halloween')void this.ensureMarshmallow().catch(e=>console.warn('[Seasonal] preload',e));
  }
@@ -185,17 +245,49 @@ class SeasonalController{
    if(!SCENES.includes(next.season)||!SCHEDULE.includes(next.mode))return false;
    if(mins(next.start)>=mins(next.end))return false;
    const prev=this.state;
-   if(values.season && values.season!==prev.season){
-     next.sound=next.season==='christmas'?next.sound_christmas:next.sound_halloween;
+   if(values.season){
+     next.sound=next.season==='halloween'?next.sound_halloween:next.sound_christmas;
+     next.manual_season=next.season;next.manual_date=dayKey(new Date());
    }
    if(Object.prototype.hasOwnProperty.call(values,'sound')){
-     next['sound_'+next.season]=!!next.sound;
+     next[next.season==='halloween'?'sound_halloween':'sound_christmas']=!!next.sound;
    }
    this.state=next;save(next);
    if(prev.start!==next.start||prev.end!==next.end){try{localStorage.removeItem(PLAN)}catch{}}
    if(prev.season!==next.season || (prev.enabled&&!next.enabled))this.stop();
    this.silenceLegacyChristmas();this.schedule();this.changed();
    if(prev.season!==next.season && next.season==='halloween')void this.ensureMarshmallow().catch(e=>console.warn('[Seasonal] preload',e));
+   return true;
+ }
+ holidayForDate(date=new Date()){
+   if(!this.config.seasonal_calendar.enabled)return null;
+   for(const id of HOLIDAY_ORDER){
+     const holiday=this.config.seasonal_calendar.holidays[id];
+     if(holiday.enabled&&inAnnualRange(date,holiday.start,holiday.end))return {id,season:id};
+   }
+   return null;
+ }
+ syncCalendar(date=new Date()){
+   if(!this.config.seasonal_calendar.enabled){
+     if(this.state.season===this.state.manual_season)return false;
+     const previous=this.state.season,season=this.state.manual_season;
+     this.state={...this.state,season,sound:season==='halloween'?this.state.sound_halloween:this.state.sound_christmas};
+     save(this.state);
+     if(this.busy)this.stop();
+     this.silenceLegacyChristmas();this.changed();
+     if(previous!=='halloween'&&season==='halloween')void this.ensureMarshmallow().catch(e=>console.warn('[Seasonal] preload',e));
+     return true;
+   }
+   const manualToday=this.state.manual_date===dayKey(date);
+   const match=manualToday?null:this.holidayForDate(date);
+   const season=manualToday?this.state.season:(match?match.season:this.state.manual_season);
+   if(season===this.state.season)return false;
+   const previous=this.state.season;
+   this.state={...this.state,season,sound:season==='halloween'?this.state.sound_halloween:this.state.sound_christmas};
+   save(this.state);
+   if(this.busy)this.stop();
+   this.silenceLegacyChristmas();this.changed();
+   if(previous!=='halloween'&&season==='halloween')void this.ensureMarshmallow().catch(e=>console.warn('[Seasonal] preload',e));
    return true;
  }
   setIntervalMinutes(value){
@@ -236,6 +328,52 @@ class SeasonalController{
    }
    return this.marshPromise;
  }
+ async playImageScene(scene,token){
+   const scenes=await import('./seasonal-scenes.mjs');
+   const url=scenes.getSceneURL(scene,this.config[scene+'_url']);
+   if(!url)throw Error(`Scene asset is not available: ${scene}`);
+   const response=await fetch(url);
+   if(!response.ok)throw Error(`Scene asset unavailable (${response.status}): ${url}`);
+   const buffer=await response.arrayBuffer();
+   const duration=scenes.webpDuration(buffer);
+   if(this.generation!==token)return null;
+   const image=document.createElement('img');
+   image.alt='';image.setAttribute('aria-hidden','true');
+   image.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;object-fit:contain;pointer-events:none;z-index:1100;';
+   this.imageScene=image;
+   this.imageURL=URL.createObjectURL(new Blob([buffer],{type:'image/webp'}));
+   const loaded=new Promise((resolve,reject)=>{
+     this.imageResolve=resolve;
+     image.onload=()=>{this.imageResolve=null;resolve();};
+     image.onerror=()=>{this.imageResolve=null;reject(Error(`Could not load seasonal scene: ${url}`));};
+   });
+   document.body.appendChild(image);
+   image.src=this.imageURL;
+   await loaded;
+   if(this.generation!==token)return null;
+   if(this.state.sound && (scene==='st_martin'||scene==='nikolaus')){
+     const customSound=scene==='st_martin'?this.config.st_martin_sound_url:this.config.nikolaus_sound_url;
+     const soundURL=scenes.getSceneSoundURL(scene,customSound);
+     if(soundURL && typeof Audio!=='undefined'){
+       const audio=new Audio(soundURL);
+       audio.preload='auto';
+       audio.volume=scene==='st_martin'?this.config.st_martin_volume:this.config.nikolaus_volume;
+       this.sceneAudio=audio;
+       try{
+         const started=audio.play();
+         if(started && typeof started.catch==='function')
+           started.catch(error=>console.warn('[Seasonal] Nikolaus audio blocked:',error));
+       }catch(error){console.warn('[Seasonal] Nikolaus audio unavailable:',error);}
+     }
+   }
+   return duration;
+ }
+ stopImageScene(){
+   if(this.sceneAudio){this.sceneAudio.pause();this.sceneAudio=null;}
+   if(this.imageResolve){this.imageResolve();this.imageResolve=null;}
+   if(this.imageScene){this.imageScene.onload=null;this.imageScene.onerror=null;this.imageScene.remove();this.imageScene=null;}
+   if(this.imageURL){URL.revokeObjectURL(this.imageURL);this.imageURL=null;}
+ }
   attachPreview(host){
     this.previewHost=host||null;
     if(this.marsh)this.marsh.setHost(this.previewHost);
@@ -257,7 +395,7 @@ class SeasonalController{
  async play(){
    if(this.busy)return;
    if(document.hidden)return;
-   this.stop();const token=this.generation;this.busy=true;this.changed();
+   this.stop();const token=this.generation;this.busy=true;this.error='';this.changed();
    try{
      if(this.state.season==='christmas'){
        if(!customElements.get('frankys-christmas-renderer'))throw Error('Christmas renderer is missing');
@@ -267,6 +405,10 @@ class SeasonalController{
        const ok=this.xmas._play();
        if(ok===false)throw Error('Christmas playback could not start');
        this.finish=setTimeout(()=>{this.busy=false;this.changed();},(this.config.christmas_duration+.7)*1000);
+     }else if(this.state.season==='st_martin'||this.state.season==='nikolaus'){
+       const duration=await this.playImageScene(this.state.season,token);
+       if(this.generation!==token)return;
+       this.finish=setTimeout(()=>{this.stopImageScene();this.busy=false;this.changed();},duration);
      }else{
        const m=await this.ensureMarshmallow();
        if(this.generation!==token||this.state.season!=='halloween')return;
@@ -275,11 +417,16 @@ class SeasonalController{
        if(this.generation!==token){m.stop();return;}
        this.finish=setTimeout(()=>{this.busy=false;this.changed();},15500);
      }
-   }catch(e){this.busy=false;console.error('[Seasonal]',e);this.error=String(e.message||e);this.changed();}
+   }catch(e){
+     if(this.generation!==token)return;
+     this.stopImageScene();this.busy=false;console.error('[Seasonal]',e);
+     this.error=tr('Animationsdatei konnte nicht abgespielt werden: ','Animation could not be played: ')+String(e.message||e);this.changed();
+   }
  }
   stop(){
    this.generation++;
    if(this.finish)clearTimeout(this.finish);
+   this.stopImageScene();
    if(this.xmas?. _stop)this.xmas._stop();
    if(this.marsh?.stop)this.marsh.stop();
    this.busy=false;this.changed();
@@ -287,14 +434,22 @@ class SeasonalController{
  schedule(){
    if(this.timer!==null)clearTimeout(this.timer);
    this.timer=null;
-   if(!this.state.enabled||document.hidden || (this.state.season==='halloween'&&!this.config.halloween_overlay))return;
-   const now=new Date(),when=scheduled(now,this.state,this.config);
-   if(when===null)return;
+   if(document.hidden)return;
+   const now=new Date();
+   const calendarAt=this.config.seasonal_calendar.enabled?new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,1,0).getTime():null;
+   const appearanceAt=this.state.enabled&&!(this.state.season==='halloween'&&!this.config.halloween_overlay)
+     ?scheduled(now,this.state,this.config):null;
+   const candidates=[appearanceAt,calendarAt].filter(value=>value!==null);
+   if(!candidates.length)return;
+   const when=Math.min(...candidates);
    this.timer=setTimeout(()=>{
      this.timer=null;
      const dt=new Date();
-     if(this.state.enabled&&!document.hidden && mins(`${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`)>=mins(this.state.start)
-       && mins(`${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`)<mins(this.state.end))void this.play();
+     if(this.config.seasonal_calendar.enabled)this.syncCalendar(dt);
+     const clock=`${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+     if(appearanceAt!==null&&dt.getTime()>=appearanceAt&&this.state.enabled&&!document.hidden&&mins(clock)>=mins(this.state.start)
+       &&mins(clock)<mins(this.state.end)&&(!this.config.seasonal_calendar.enabled||this.holidayForDate(dt))
+       &&!(this.state.season==='halloween'&&!this.config.halloween_overlay))void this.play();
      this.schedule();
    },Math.min(2147483647,Math.max(100,when-now.getTime())));
  }
@@ -342,6 +497,18 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .options-panel{padding:2px 0 0}
 .options-panel[hidden]{display:none}
 .options-trigger[aria-expanded="true"]{border-color:var(--fs-seasonal-accent)}
+.calendar-details{margin:12px 0;border:1px solid var(--fs-seasonal-border,#80909e);border-radius:10px;padding:10px}
+.calendar-details summary{cursor:pointer;font-weight:600;min-height:28px;list-style-position:inside}
+.calendar-master{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 0}
+.calendar-master input,.calendar-holiday-title input{width:19px;height:19px;accent-color:var(--fs-seasonal-accent)}
+.calendar-holidays{display:grid;gap:10px}
+.calendar-holiday{border:1px solid var(--fs-seasonal-border,#80909e);border-radius:10px;padding:10px}
+.calendar-holiday-title{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-weight:600}
+.calendar-dates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.calendar-dates label{display:grid;gap:4px;font-size:12px}
+.calendar-dates input{box-sizing:border-box;width:100%;min-width:0;min-height:42px;padding:8px;color:inherit;background:var(--fs-seasonal-background,#1b2836);border:1px solid var(--fs-seasonal-border,#80909e);border-radius:8px;font:inherit}
+.calendar-dates input[aria-invalid="true"]{border-color:var(--error-color,#ff8080)}
+.calendar-message{font-size:12px;opacity:.8;margin-top:10px}
 `;
 class FrankysSeasonalCard extends HTMLElement{
  constructor(){super();this.attachShadow({mode:'open'});this._listener=()=>this.update();this._language='';}
@@ -352,7 +519,7 @@ class FrankysSeasonalCard extends HTMLElement{
    this._language=lang;
    this.render(!!changed);
  }
- setConfig(raw){this.config=configOf(raw);ctrl.configure(this.config);this.render(true);}
+ setConfig(raw){this.config=withCardCalendar(raw);ctrl.configure(this.config);this.render(true);}
  connectedCallback(){window.addEventListener('frankys-seasonal-changed',this._listener);this.render();}
  disconnectedCallback(){window.removeEventListener('frankys-seasonal-changed',this._listener);}
  getCardSize(){return 3;}
@@ -364,6 +531,18 @@ class FrankysSeasonalCard extends HTMLElement{
    if(!force && this.shadowRoot.getElementById('season')){this.update();return;}
    const preview=this.stateNeedsPreview();
    const optionsOpen=this.shadowRoot.getElementById('options')?.getAttribute('aria-expanded')==='true';
+   const calendarOpen=this.shadowRoot.getElementById('calendar-details')?.open===true;
+   const calendarLabels={halloween:'Halloween',st_martin:'St. Martin',nikolaus:tr('Nikolaus','St. Nicholas'),christmas:tr('Weihnachten','Christmas')};
+   const calendarRows=HOLIDAY_ORDER.map(id=>{
+     const holiday=this.config.seasonal_calendar.holidays[id];
+     const format=value=>value.slice(3)+'.'+value.slice(0,2);
+     return `<section class="calendar-holiday">
+       <label class="calendar-holiday-title"><input type="checkbox" data-calendar-holiday="${id}" data-field="enabled" ${holiday.enabled?'checked':''}><span>${calendarLabels[id]}</span></label>
+       <div class="calendar-dates">
+         <label>${tr('Von (TT.MM)','From (DD.MM)')}<input type="text" maxlength="5" inputmode="numeric" placeholder="TT.MM" data-calendar-holiday="${id}" data-field="start" value="${format(holiday.start)}"></label>
+         <label>${tr('Bis (TT.MM)','Until (DD.MM)')}<input type="text" maxlength="5" inputmode="numeric" placeholder="TT.MM" data-calendar-holiday="${id}" data-field="end" value="${format(holiday.end)}"></label>
+       </div></section>`;
+   }).join('');
    this.shadowRoot.innerHTML=`<style>${style}</style><style id="seasonal-custom-style"></style><ha-card>
      <div class="heading"><div class="name"></div><span class="status"></span></div>
      <div id="migration-note" class="migration-note" hidden role="status">
@@ -375,6 +554,8 @@ class FrankysSeasonalCard extends HTMLElement{
        <div id="menu" class="menu" role="group" aria-label="Season" hidden>
          <button type="button" data-season="christmas">${tr('Weihnachten','Christmas')}</button>
          <button type="button" data-season="halloween">Halloween</button>
+         <button type="button" data-season="st_martin">St. Martin</button>
+         <button type="button" data-season="nikolaus">${tr('Nikolaus','St. Nicholas')}</button>
        </div>
      </div>
      <div class="buttons"><button type="button" id="toggle"></button><button type="button" id="sound"></button><button type="button" id="test"></button><button type="button" id="stop"></button></div>
@@ -389,6 +570,12 @@ class FrankysSeasonalCard extends HTMLElement{
      </div>
      <div id="custom-line" class="line custom-line" hidden><label for="custom_minutes">${tr('Eigenes Intervall','Custom interval')}</label><input type="number" id="custom_minutes" min="15" max="1440" step="1" inputmode="numeric"><span>${tr('Minuten','minutes')}</span></div>
      <div class="line"><label for="from">${tr('Von','From')}</label><input id="from" type="time"><label for="to">${tr('Bis','To')}</label><input id="to" type="time"></div>
+     <details id="calendar-details" class="calendar-details" ${calendarOpen?'open':''}>
+       <summary>${tr('Jahreskalender','Annual calendar')}</summary>
+       <label class="calendar-master"><input type="checkbox" id="calendar-enabled" ${this.config.seasonal_calendar.enabled?'checked':''}><span>${tr('Automatische Feiertagsauswahl','Automatic holiday selection')}</span></label>
+       <div class="calendar-holidays">${calendarRows}</div>
+       <div id="calendar-message" class="calendar-message">${tr('Änderungen werden in diesem Browser gespeichert.','Changes are saved in this browser.')}</div>
+     </details>
      ${preview?'<div id="preview" style="position:relative;width:100%;height:250px;min-height:200px;overflow:hidden;background:#111c28;border-radius:12px;margin-top:10px"></div>':''}
      <div class="note"></div>
      </div>
@@ -407,6 +594,34 @@ class FrankysSeasonalCard extends HTMLElement{
      panel.hidden=!open;
      $('options').setAttribute('aria-expanded',String(open));
    };
+   const updateCalendar=element=>{
+     const current=ctrl.config.seasonal_calendar;
+     let next;
+     if(element.id==='calendar-enabled')next={...current,enabled:element.checked};
+     else{
+       const {calendarHoliday:id,field}=element.dataset;
+       if(!HOLIDAY_ORDER.includes(id)||!['enabled','start','end'].includes(field))return;
+       let value=element.checked;
+       if(field!=='enabled'){
+         const raw=element.value.trim();
+         const iso=/^\d{2}\.\d{2}$/.test(raw)?raw.slice(3)+'-'+raw.slice(0,2):'';
+         if(!iso||cleanAnnualDate(iso,'invalid')!==iso){
+           element.setAttribute('aria-invalid','true');
+           $('calendar-message').textContent=tr('Ungültiges Datum (TT.MM).','Invalid date (DD.MM).');
+           return;
+         }
+         element.removeAttribute('aria-invalid');
+         value=iso;
+       }
+       next={...current,holidays:{...current.holidays,[id]:{...current.holidays[id],[field]:value}}};
+     }
+     const saved=this.saveCalendarFromCard(next);
+     $('calendar-message').textContent=saved
+       ?tr('Im Browser gespeichert.','Saved in this browser.')
+       :tr('Speichern fehlgeschlagen.','Could not save.');
+   };
+   $('calendar-enabled').onchange=e=>updateCalendar(e.currentTarget);
+   this.shadowRoot.querySelectorAll('[data-calendar-holiday]').forEach(el=>el.onchange=e=>updateCalendar(e.currentTarget));
    $('options').onkeydown=e=>{
      if(e.key==='Escape'){e.preventDefault();$('options-panel').hidden=true;$('options').setAttribute('aria-expanded','false');}
    };
@@ -433,6 +648,14 @@ class FrankysSeasonalCard extends HTMLElement{
    this.applyDesign();
    this.update();
  }
+ saveCalendarFromCard(calendar){
+   const cleaned={enabled:bool(calendar.enabled,false),holidays:normalizeHolidays(calendar.holidays)};
+   try{localStorage.setItem(CALENDAR_OVERRIDE,JSON.stringify(cleaned));}
+   catch(e){console.warn('[Seasonal] Could not persist annual calendar',e);return false;}
+   this.config=configOf({...this.config,seasonal_calendar:cleaned});
+   ctrl.configure(this.config);
+   return true;
+ }
  applyDesign(){
    const card=this.shadowRoot.querySelector('ha-card');
    if(!card || !this.config)return;
@@ -452,7 +675,7 @@ class FrankysSeasonalCard extends HTMLElement{
    if(!this.config)return;
    const $=id=>this.shadowRoot.getElementById(id);
    if(!$('season')){this.render(true);return;}
-   const s=ctrl.state,scene=s.season==='christmas'?tr('Weihnachten','Christmas'):'Halloween';
+   const s=ctrl.state,scene=({christmas:tr('Weihnachten','Christmas'),halloween:'Halloween',st_martin:'St. Martin',nikolaus:tr('Nikolaus','St. Nicholas')})[s.season];
    // Do not destroy buttons or open menus during repeated HA hass updates.
    const currentPreview=!!$('preview');
    if(currentPreview!==this.stateNeedsPreview()){this.render(true);return;}
@@ -474,8 +697,17 @@ class FrankysSeasonalCard extends HTMLElement{
    if(this.shadowRoot.activeElement!==$('to'))$('to').value=s.end;
    $('custom-line').hidden=s.mode!=='custom';
    if(this.shadowRoot.activeElement!==$('custom_minutes'))$('custom_minutes').value=String(s.interval_minutes);
+   const calendar=ctrl.config.seasonal_calendar;
+   if($('calendar-enabled'))$('calendar-enabled').checked=calendar.enabled;
+   for(const field of this.shadowRoot.querySelectorAll('[data-calendar-holiday]')){
+     if(field===this.shadowRoot.activeElement)continue;
+     const entry=calendar.holidays[field.dataset.calendarHoliday];
+     if(!entry)continue;
+     field[field.type==='checkbox'?'checked':'value']=field.type==='checkbox'
+       ?entry.enabled:entry[field.dataset.field].slice(3)+'.'+entry[field.dataset.field].slice(0,2);
+   }
    const n=this.shadowRoot.querySelector('.note');
-   n.textContent=ctrl.error||tr('Nur die gewählte Season wird automatisch gestartet. Die Einstellungen bleiben pro Saison erhalten.','Only the selected season is scheduled. Settings for both are retained.');
+   n.textContent=ctrl.error||tr('Die manuelle Auswahl bleibt bis zum nächsten Kalendertag bestehen. Der Jahreskalender ist direkt unter Optionen einstellbar.','Manual selection remains until the next calendar day. The annual calendar can be configured under Options.');
    n.classList.toggle('error',!!ctrl.error);
  }
 }
@@ -493,7 +725,7 @@ class FrankysSeasonalEditor extends HTMLElement{
    const c=this.config,html=[];
    const expanded=[...this.shadowRoot.querySelectorAll('details')].flatMap((node,i)=>node.open?[i]:[]);
    const choiceLabel=(key,value)=>{
-     if(key==='season')return value==='christmas'?tr('Weihnachten','Christmas'):'Halloween';
+     if(key==='season')return ({christmas:tr('Weihnachten','Christmas'),halloween:'Halloween',st_martin:'St. Martin',nikolaus:tr('Nikolaus','St. Nicholas')})[value]||String(value);
      if(key==='schedule_mode')return ({daily:tr('1–10× täglich','1–10 times daily'),hourly:tr('Jede volle Stunde','Every full hour'),'1-2':tr('1–2 Minuten','1–2 minutes'),'3-8':tr('3–8 Minuten','3–8 minutes'),'5-10':tr('5–10 Minuten','5–10 minutes'),'10-20':tr('10–20 Minuten','10–20 minutes'),custom:tr('Eigenes Intervall','Custom interval')})[value]||String(value);
      if(key==='halloween_direction')return value==='left'?tr('Links → rechts','Left → right'):tr('Rechts → links','Right → left');
      if(key==='halloween_overlay'||key==='halloween_transparent')return String(value)==='true'?tr('Ja','Yes'):tr('Nein','No');
@@ -505,10 +737,29 @@ class FrankysSeasonalEditor extends HTMLElement{
    const str=(key,label)=>{html.push(`<label>${label}<input data-key="${key}" type="text" value="${String(c[key]||'').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;')}"></label>`)};
    html.push(`<h3>${tr('Allgemein','General')}</h3>`);
    str('title',tr('Titel','Title'));
-   select('season','Season',['christmas','halloween']);
+   select('season',tr('Saison','Season'),SCENES);
    select('schedule_mode',tr('Zeitplan','Schedule'),SCHEDULE);
    str('schedule_start',tr('Von (HH:MM)','From (HH:MM)'));str('schedule_end',tr('Bis (HH:MM)','Until (HH:MM)'));
    num('interval_minutes',tr('Eigenes Intervall (Minuten)','Custom interval (minutes)'),15,1440,1);
+   html.push(`<details><summary>${tr('Optionaler Jahreskalender','Optional annual calendar')}</summary>`);
+   html.push(`<small>${tr('Die Konfiguration wird mit der HA-Karte gespeichert. Bei überlappenden Bereichen gilt die Reihenfolge Halloween, St. Martin, Nikolaus, Weihnachten. Jahresbereiche können über den Jahreswechsel laufen.','This configuration is saved with the HA card. For overlapping ranges the order is Halloween, St. Martin, St. Nicholas, Christmas. Annual ranges may cross New Year.')}</small>`);
+   html.push(`<label>${tr('Automatische Feiertagsauswahl','Automatic holiday selection')}<select data-key="seasonal_calendar_enabled"><option value="true" ${c.seasonal_calendar.enabled?'selected':''}>${tr('Ein','On')}</option><option value="false" ${!c.seasonal_calendar.enabled?'selected':''}>${tr('Aus','Off')}</option></select></label>`);
+   const holidayLabels={halloween:'Halloween',st_martin:'St. Martin',nikolaus:tr('Nikolaus','St. Nicholas'),christmas:tr('Weihnachten','Christmas')};
+   for(const id of HOLIDAY_ORDER){
+     const holiday=c.seasonal_calendar.holidays[id];
+     const safe=value=>String(value).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;');
+     html.push(`<fieldset><legend>${holidayLabels[id]}</legend><label>${tr('Aktiv','Enabled')}<input data-holiday="${id}" data-field="enabled" type="checkbox" ${holiday.enabled?'checked':''}></label>`);
+     const display=value=>value.slice(3)+'.'+value.slice(0,2);
+     html.push(`<label>${tr('Von (TT.MM)','From (DD.MM)')}<input data-holiday="${id}" data-field="start" type="text" inputmode="numeric" placeholder="TT.MM" value="${safe(display(holiday.start))}"></label>`);
+     html.push(`<label>${tr('Bis (TT.MM)','Until (DD.MM)')}<input data-holiday="${id}" data-field="end" type="text" inputmode="numeric" placeholder="TT.MM" value="${safe(display(holiday.end))}"></label></fieldset>`);
+   }
+   html.push('</details>');
+   str('st_martin_url',tr('St.-Martin-WebP-Pfad (optional)','St. Martin WebP path (optional)'));
+   str('st_martin_sound_url',tr('St.-Martin-Tonspur (optional)','St. Martin soundtrack (optional)'));
+   num('st_martin_volume',tr('St.-Martin-Lautstärke (0–1)','St. Martin volume (0–1)'),0,1,.05);
+   str('nikolaus_url',tr('Nikolaus-WebP-Pfad (optional)','St. Nicholas WebP path (optional)'));
+   str('nikolaus_sound_url',tr('Nikolaus-Tonspur (optional)','St. Nicholas soundtrack (optional)'));
+   num('nikolaus_volume',tr('Nikolaus-Lautstärke (0–1)','St. Nicholas volume (0–1)'),0,1,.05);
    html.push(`<details><summary>${tr('Kartendesign anpassen','Customize card design')}</summary>`);
    html.push(`<small>${tr('Ohne Änderungen wird das bisherige Grunddesign mit Home-Assistant-Farben verwendet. Leere Farbfelder übernehmen das HA-Theme.','Defaults use the current look and Home Assistant colors. Empty color fields inherit the HA theme.')}</small>`);
    const color=(key,label)=>{
@@ -552,11 +803,23 @@ class FrankysSeasonalEditor extends HTMLElement{
    });
    this.shadowRoot.querySelectorAll('[data-key]').forEach(el=>{el.onchange=()=>{
      const key=el.dataset.key,next={...this.config};
-     next[key]=el.type==='number'?Number(el.value):(['halloween_overlay','halloween_transparent'].includes(key)?el.value==='true':el.value);
+     if(key==='seasonal_calendar_enabled')next.seasonal_calendar={...this.config.seasonal_calendar,enabled:el.value==='true'};
+     else next[key]=el.type==='number'?Number(el.value):(['halloween_overlay','halloween_transparent'].includes(key)?el.value==='true':el.value);
      const clean=configOf(next);
      if(key==='schedule_start'||key==='schedule_end'){
        if(mins(clean.schedule_start)>=mins(clean.schedule_end) || clean[key]!==next[key]){this.render();return;}
      }
+     this.config=clean;
+     this.dispatchEvent(new CustomEvent('config-changed',{detail:{config:clean},bubbles:true,composed:true}));
+   }});
+   this.shadowRoot.querySelectorAll('[data-holiday]').forEach(el=>{el.onchange=()=>{
+     const {holiday,field}=el.dataset,entry=this.config.seasonal_calendar.holidays[holiday];
+     const value=field==='enabled'?el.checked:/^\d{2}\.\d{2}$/.test(el.value)?el.value.slice(3)+'-'+el.value.slice(0,2):el.value;
+     const next={...this.config,seasonal_calendar:{...this.config.seasonal_calendar,holidays:{
+       ...this.config.seasonal_calendar.holidays,[holiday]:{...entry,[field]:value}
+     }}};
+     const clean=configOf(next);
+     if(field!=='enabled'&&clean.seasonal_calendar.holidays[holiday][field]!==value){this.render();return;}
      this.config=clean;
      this.dispatchEvent(new CustomEvent('config-changed',{detail:{config:clean},bubbles:true,composed:true}));
    }});
