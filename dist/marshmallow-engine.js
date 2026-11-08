@@ -317,8 +317,8 @@ class MarshmallowPopEngine {
   async load() {
     // Loaded lazily so idle HA dashboards don't import the 3D engine or touch the GPU.
     const [THREE, loaderModule] = await Promise.all([
-      import('./vendor/three.module.js'),
-      import('./vendor/GLTFLoader.js'),
+      import('./vendor/three.module.js?v=0.4.2'),
+      import('./vendor/GLTFLoader.js?v=0.4.2'),
     ]);
     this.THREE = THREE;
     this.stage = document.createElement('div');

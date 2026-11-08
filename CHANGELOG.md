@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.2 — Reliable browser cache updates (2026-11-08)
+- Version-tag all ES module imports, including nested seasonal scenes, Halloween engine and local Three.js dependencies, so HACS updates do not reuse stale JavaScript modules
+- Preserve synchronous custom-card registration, visual design, animation timing and browser-specific settings
+- Add an automated regression check that fails if a future version bump forgets to update import URLs
+
 ## v0.4.1 — Annual calendar, St. Martin and St. Nicholas (2026-11-08)
 - New annual calendar with separate enable switches and editable date windows for Halloween, St. Martin, St. Nicholas and Christmas; inclusive annual ranges, including New Year crossings
 - Calendar can be edited inside the existing Options dropdown without entering dashboard edit mode; changes are browser-local, saved between reloads and do not change HA card YAML
