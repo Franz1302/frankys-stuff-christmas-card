@@ -1,3 +1,10 @@
+## 0.5.3 — Safari transparency hotfix
+
+- Safari/iPadOS now uses a bundled transparent animated WebP and synchronized MP3 for the Christkind; the VP9 WebM remains unchanged for other browsers.
+- Corrects the opaque green video background caused by browsers ignoring VP9 alpha.
+- No changes to Christmas figure selection, schedules, child lock or other seasonal scenes.
+- No special support for obsolete iOS 12 tablets.
+
 ## 0.5.2 — Christmas figure selection (release candidate)
 
 - Santa, Christkind or both alternately, chosen on-card under Options.
