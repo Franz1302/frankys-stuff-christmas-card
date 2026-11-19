@@ -1,0 +1,23 @@
+'use strict';
+/* Safari playback regression for Christkind animation. */
+const fs=require('node:fs');
+const assert=require('node:assert/strict');
+const webp=fs.readFileSync('dist/assets/christkind_lipsync_safari.webp');
+const audio=fs.readFileSync('dist/assets/christkind_lipsync_safari.mp3');
+const card=fs.readFileSync('dist/frankys-seasonal-card.js','utf8');
+const entry=fs.readFileSync('dist/frankys-christmas-card.js','utf8');
+assert(webp.length>1000000,'Safari animation must be bundled');
+assert(audio.length>100000,'Safari soundtrack must be bundled');
+assert.equal(webp.toString('ascii',0,4),'RIFF');
+assert.equal(webp.toString('ascii',8,12),'WEBP');
+assert.equal(webp.toString('ascii',12,16),'VP8X');
+assert.equal(webp.readUInt32LE(4)+8,webp.length,'WebP must be complete');
+assert((webp[20]&0x10)!==0,'WebP MUST contain an alpha channel');
+assert((webp[20]&0x02)!==0,'WebP MUST be animated');
+assert(card.includes('christkind_lipsync_safari.webp'),'Card must configure Safari WebP');
+assert(card.includes('christkind_lipsync_safari.mp3'),'Card must configure separate Safari soundtrack');
+assert(card.includes('const appleMobile='),'Apple iPad browsers must select the fallback');
+assert(card.includes('const safariDesktop='),'Safari desktop must select the fallback');
+assert(card.includes("const VERSION='0.5.3'"),'Version must be bumped');
+assert(entry.includes("frankys-seasonal-card.js?v=0.5.3"),'HACS entry must load the new version');
+console.log('OK: animated WebP alpha, bundled MP3, Apple UA fallback and v0.5.3 loader');

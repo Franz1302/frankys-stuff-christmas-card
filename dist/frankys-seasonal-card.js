@@ -3,7 +3,7 @@
  * installed Christmas Card (no changes to its published source).
  * Halloween reuses the original Marshmallow v0.2.2 animation and audio.
  */
-const VERSION='0.5.2';
+const VERSION='0.5.3';
 const STORAGE='frankys-seasonal/controller/v1';
 const PLAN='frankys-seasonal/daily-plan/v1';
 const CONFIG_CACHE='frankys-seasonal/calendar-config/v1';
@@ -36,7 +36,7 @@ const DEFAULT={
  santa_enabled:true,santa_sound_enabled:true,santa_schedule_mode:'',santa_schedule_start:'',santa_schedule_end:'',santa_interval_minutes:0,
  christkind_enabled:false,christkind_sound_enabled:true,christkind_schedule_mode:'daily',christkind_schedule_start:'09:00',christkind_schedule_end:'22:00',christkind_interval_minutes:60,
  christkind_duration:15,christkind_size:100,christkind_volume:.8,
- christkind_video:'/hacsfiles/frankys-stuff-christmas-card/assets/christkind_lipsync_transparent.webm',christkind_ios_video:'',christkind_ios_audio:'',
+ christkind_video:'/hacsfiles/frankys-stuff-christmas-card/assets/christkind_lipsync_transparent.webm',christkind_ios_video:'/hacsfiles/frankys-stuff-christmas-card/assets/christkind_lipsync_safari.webp',christkind_ios_audio:'/hacsfiles/frankys-stuff-christmas-card/assets/christkind_lipsync_safari.mp3',
  halloween_fps:30,halloween_particles:40,halloween_size:1,halloween_direction:'left',
  halloween_render_scale:.75,halloween_volume:.85,halloween_laugh_volume:1,
  halloween_pop_volume:1,halloween_bubbles_volume:1,
@@ -408,7 +408,9 @@ class SeasonalController{
  }
  async playChristkind(token){
    const c=this.config,ua=navigator.userAgent||'';
-   const useImage=!!c.christkind_ios_video && /iPad|iPhone|iPod|Safari/.test(ua)&&!/Chrome|Chromium|Edg|CriOS/.test(ua);
+   const appleMobile=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+   const safariDesktop=/Safari/.test(ua)&&!/Chrome|Chromium|Edg|OPR|CriOS/.test(ua);
+   const useImage=!!c.christkind_ios_video&&(appleMobile||safariDesktop);
    const stage=document.createElement('div');
    stage.id='frankys-christkind-flight';
    stage.style.cssText='position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:2147483000';
@@ -473,7 +475,7 @@ class SeasonalController{
    return this.marshPromise;
  }
  async playImageScene(scene,token){
-   const scenes=await import('./seasonal-scenes.mjs?v=0.5.2');
+   const scenes=await import('./seasonal-scenes.mjs?v=0.5.3');
    const url=scenes.getSceneURL(scene,this.config[scene+'_url']);
    if(!url)throw Error(`Scene asset is not available: ${scene}`);
    const response=await fetch(url);

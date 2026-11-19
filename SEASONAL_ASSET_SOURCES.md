@@ -30,3 +30,10 @@
 - `dist/assets/christkind_lipsync_transparent.webm`: author-provided transparent animation with synchronized embedded sound. This asset must be uploaded to the repository before publishing the release; do not ship a broken default URL.
 - The source code's MIT license does not transfer to the animation, voice, soundtrack or any third-party-generation rights. The author must verify that the contributing services' licenses permit public redistribution and provide any required attribution.
 - No converted animated WebP/APNG or MP3 fallback is distributed for legacy iOS devices in v0.5.2.
+
+## Safari transparency fallback (v0.5.3)
+
+- `dist/assets/christkind_lipsync_safari.webp`: transparent 20 fps 960×540 animated WebP (15 seconds), generated from `christkind_lipsync_transparent.webm` using FFmpeg and its existing alpha channel. No new source animation or additional visual elements.
+- `dist/assets/christkind_lipsync_safari.mp3`: 160 kbps MP3 of the original recording's soundtrack, split for animated WebP playback on Safari/iPadOS.
+- Both derived files have the same media/voice licensing and attribution obligations as the original Christkind recording. They are not MIT-licensed.
+- Conversion is reproducible using `bash scripts/build-christkind-safari.sh` with FFmpeg (libvpx-vp9 decoder/libwebp_anim encoder) and Python Pillow.

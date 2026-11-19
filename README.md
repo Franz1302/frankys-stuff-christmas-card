@@ -24,7 +24,13 @@ type: custom:frankys-seasonal-card
 
 The repository URL retains the original `christmas-card` slug for safe upgrades.
 
-## Version 0.5.2 (release preparation)
+## Version 0.5.3 — Safari transparency hotfix
+
+The Christkind source WebM **already has a real alpha channel**, but Apple Safari/iPadOS may play VP9 WebM without honoring transparency. On modern Safari/iPadOS, the card now automatically uses a **transparent 20 fps animated WebP** with a separate synchronized MP3 soundtrack. Chrome/Edge/Firefox keep the original WebM with embedded sound. No manual configuration required.
+
+The new files are `dist/assets/christkind_lipsync_safari.webp` and `dist/assets/christkind_lipsync_safari.mp3`. They are derived from the original 15-second Christkind recording; its speech and movement are unchanged. Compatibility with older iOS 12 devices is **not guaranteed** and remains deferred.
+
+## Version 0.5.2
 
 - Christmas now supports **Santa**, **Christkind** or **both alternately**, selected directly under **Options → Who should appear?** on the card. Per-browser selection persists locally; child lock prevents changing it. The selected figures never play at the same time.
 - Each figure has separate on/off, frequency, time window, size, volume and manual test controls. Advanced scheduling remains in the visual editor.
