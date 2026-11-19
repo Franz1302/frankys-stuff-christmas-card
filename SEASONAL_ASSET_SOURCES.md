@@ -24,3 +24,9 @@
 - `dist/vendor/three.core.js`, `three.module.js`, `GLTFLoader.js`, `BufferGeometryUtils.js`: Three.js r180, copyright Three.js authors, MIT.
 - Imports adjusted to local relative paths; original MIT notice is preserved in `dist/vendor/THREE_LICENSE.txt`.
 - No remote CDN is used for rendering at runtime.
+
+## Christkind (v0.5.2)
+
+- `dist/assets/christkind_lipsync_transparent.webm`: author-provided transparent animation with synchronized embedded sound. This asset must be uploaded to the repository before publishing the release; do not ship a broken default URL.
+- The source code's MIT license does not transfer to the animation, voice, soundtrack or any third-party-generation rights. The author must verify that the contributing services' licenses permit public redistribution and provide any required attribution.
+- No converted animated WebP/APNG or MP3 fallback is distributed for legacy iOS devices in v0.5.2.
