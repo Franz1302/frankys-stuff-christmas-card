@@ -14,8 +14,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Ensure FFmpeg and Pillow available
         run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg python3-pil
           ffmpeg -hide_banner -encoders | grep -q libwebp_anim
-          python3 -m pip install --break-system-packages --user Pillow
       - name: Convert VP9 alpha video for modern Apple browsers
         run: bash scripts/build-christkind-safari.sh
       - name: Commit generated media into this hotfix branch
