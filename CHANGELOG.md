@@ -1,3 +1,10 @@
+## 0.5.2 — Christmas figure selection (release candidate)
+
+- Santa, Christkind or both alternately, chosen on-card under Options.
+- Separate schedules and playback settings, single no-overlap scheduler, child lock and individual tests.
+- New transparent Christkind WebM with embedded soundtrack (required for release).
+- No legacy iOS tablet conversion; previous seasons and dashboard config preserved.
+
 # Changelog
 
 ## v0.4.2 — Reliable browser cache updates (2026-11-08)
