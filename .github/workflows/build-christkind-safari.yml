@@ -1,0 +1,28 @@
+name: Build Christkind transparent Safari media
+on:
+  push:
+    branches: [hotfix/v0.5.3-safari-alpha]
+    paths:
+      - .github/workflows/build-christkind-safari.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure FFmpeg and Pillow available
+        run: |
+          ffmpeg -hide_banner -encoders | grep -q libwebp_anim
+          python3 -m pip install --break-system-packages --user Pillow
+      - name: Convert VP9 alpha video for modern Apple browsers
+        run: bash scripts/build-christkind-safari.sh
+      - name: Commit generated media into this hotfix branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/assets/christkind_lipsync_safari.webp dist/assets/christkind_lipsync_safari.mp3
+          git diff --cached --quiet && exit 0
+          git commit -m "build: add transparent Safari animation and audio"
+          git push origin "HEAD:hotfix/v0.5.3-safari-alpha"
