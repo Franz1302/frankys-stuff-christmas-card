@@ -24,6 +24,14 @@ type: custom:frankys-seasonal-card
 
 The repository URL retains the original `christmas-card` slug for safe upgrades.
 
+## Version 0.5.2 (release preparation)
+
+- Christmas now supports **Santa**, **Christkind** or **both alternately**, selected directly under **Options → Who should appear?** on the card. Per-browser selection persists locally; child lock prevents changing it. The selected figures never play at the same time.
+- Each figure has separate on/off, frequency, time window, size, volume and manual test controls. Advanced scheduling remains in the visual editor.
+- Christkind is a 15-second transparent WebM video with embedded sound. Its asset must be present at `dist/assets/christkind_lipsync_transparent.webm` for a published HACS release.
+- The former Christmas and seasonal animations, annual calendar, HACS custom-card name and dashboard UI remain compatible.
+- Compatibility conversion for older iOS tablets is deliberately **not included** in this release. Standard browser media support and autoplay rules still apply.
+
 ## Version 0.4.2
 
 **Fix for stale browser modules after HACS updates:** The bundled entry and every nested JavaScript import now carry the release version in their URLs. A regular page reload after HACS updates should load the new scripts without manually clearing the Silk/Chrome browser cache. An already open dashboard still needs to be reloaded or reopened to pick up any update. Existing settings remain unchanged.
