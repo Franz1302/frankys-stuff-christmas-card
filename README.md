@@ -54,7 +54,7 @@ The dashboard containing the card must be loaded for the browser-local scheduler
 
 ## Automatic calendar and manual season selection
 
-When the **annual calendar** is enabled, the card normally chooses the season automatically according to the configured holiday dates. **Manually selecting a season on the card overrides that selection for the rest of the current day**, including automatic appearances; this is useful for testing a different scene. The calendar takes control again on the **next local calendar day**. The **Test** button plays a scene manually without changing the scheduled season. Calendar and manual selections are stored separately per browser/display.
+When the **annual calendar** is enabled, the card normally chooses the season automatically according to the configured holiday dates. **Manually selecting a season on the card overrides the calendar's season choice for the rest of the current day**; this is useful for testing a different scene. The calendar takes control again on the **next local calendar day**. The **Test** button plays a scene manually without changing the scheduled season. Calendar and manual selections are stored separately per browser/display.
 
 ## Features
 
