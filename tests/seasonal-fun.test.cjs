@@ -10,7 +10,7 @@ const seasonal = read('frankys-seasonal-card.js');
 const christmas = read('legacy-christmas-engine.js');
 const halloween = read('marshmallow-engine.js');
 assert.match(entry, /import '\.\/legacy-christmas-engine\.js\?v=0\.4\.2'/);
-assert.match(entry, /import '\.\/frankys-seasonal-card\.js\?v=0\.5\.3'/);
+assert.match(entry, /import '\.\/frankys-seasonal-card\.js\?v=0\.5\.4'/);
 assert.match(christmas, /define\('frankys-christmas-renderer',FrankysChristmasCard\)/);
 assert.doesNotMatch(christmas, /restoreGlobalFlightController\(\);/);
 assert.match(seasonal, /define\('frankys-christmas-card',FrankysSeasonalLegacyCard\)/);
