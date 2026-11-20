@@ -20,7 +20,7 @@ try{
  assert.match(seasonal,/frankys-seasonal-test-card-editor/);
  assert.match(seasonal,/__frankysSeasonalTestController/);
  assert.match(seasonal,/frankys-seasonal-test\/calendar-config\/v1/);
- assert.match(entry,/import '\.\/frankys-seasonal-card\.js\?v=0\.5\.3'/,'isolated entry preserves its relative module filename and version');
+ assert.match(entry,/import '\.\/frankys-seasonal-card\.js\?v=0\.5\.4'/,'isolated entry preserves its relative module filename and version');
  assert.match(legacy,/frankys-seasonal-test-christmas-renderer/);
  assert.match(legacy,/__FrankysSeasonalTestChristmasAudioV026/);
  assert.match(marshmallow,/frankys-seasonal-test-marshmallow-internal/);
