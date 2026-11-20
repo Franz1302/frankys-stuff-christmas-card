@@ -46,6 +46,12 @@ The new files are `dist/assets/christkind_lipsync_safari.webp` and `dist/assets/
 
 This release adds the annual calendar, St. Martin and St. Nicholas animations with synchronized Mirelo sound. **All calendar edits made in the card are stored per browser** (not synced between displays). Audio generated on the Mirelo Free Plan is for non-commercial use only and must visibly credit Mirelo; code remains MIT, third-party media has separate terms. See [media attribution and restrictions](SEASONAL_ASSET_SOURCES.md).
 
+## Display modes (in development)
+
+The visual card editor offers **Normal**, **Compact** (status and Options only), and **Hidden** (animations only). In Hidden mode, Home Assistant hides the card's dashboard slot while its shared scheduler remains connected; existing settings, media, and schedules are unchanged. A placeholder is shown automatically while the dashboard is in edit mode, so the card can be configured again without YAML or `card_mod`.
+
+The dashboard containing the card must be loaded for the browser-local scheduler to run. Hiding an entire dashboard or leaving it unloaded will not start its animations. **This feature is currently available only on the development branch and is not released.**
+
 ## Features
 
 - **Season** button: manual Christmas, Halloween, St. Martin or St. Nicholas selection; the manual choice overrides the holiday calendar for the current date.
