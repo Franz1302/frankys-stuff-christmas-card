@@ -31,7 +31,7 @@ const DEFAULT={
  st_martin_url:'',st_martin_sound_url:'',st_martin_volume:.8,nikolaus_url:'',nikolaus_sound_url:'',nikolaus_volume:.8,
  christmas_duration:10,christmas_size:60,christmas_volume:.55,bells_volume:.78,
  christmas_video:'',christmas_sound:'',christmas_bells:'',christmas_ios_video:'',christmas_fallback:'',
- controls_locked:false,
+ controls_locked:false,display_mode:'normal',
  // Empty Santa schedule fields inherit the existing card schedule, preserving saved settings.
  santa_enabled:true,santa_sound_enabled:true,santa_schedule_mode:'',santa_schedule_start:'',santa_schedule_end:'',santa_interval_minutes:0,
  christkind_enabled:false,christkind_sound_enabled:true,christkind_schedule_mode:'daily',christkind_schedule_start:'09:00',christkind_schedule_end:'22:00',christkind_interval_minutes:60,
@@ -76,6 +76,7 @@ function configOf(raw={}){
  }
  if(typeof raw.sound==='string' && !Object.prototype.hasOwnProperty.call(raw,'christmas_sound'))c.christmas_sound=raw.sound;
  c.season=SCENES.includes(c.season)?c.season:'christmas';
+ c.display_mode=['normal','compact','hidden'].includes(c.display_mode)?c.display_mode:'normal';
  c.schedule_mode=SCHEDULE.includes(c.schedule_mode)?c.schedule_mode:'daily';
  c.schedule_start=cleanClock(c.schedule_start,'09:00');
  c.schedule_end=cleanClock(c.schedule_end,'22:00');
@@ -667,6 +668,7 @@ class SeasonalController{
 }
 const ctrl=window.__frankysSeasonalController || (window.__frankysSeasonalController=new SeasonalController());
 const style=`
+:host([hidden]){display:none!important}
 :host{
  display:block;color:var(--fs-seasonal-text,var(--primary-text-color,#edf6ff));font:inherit;
  --fs-seasonal-accent:var(--primary-color,#08c9f0);
@@ -702,6 +704,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .line[hidden]{display:none}.custom-line input{width:92px;max-width:120px}.note{font-size:12px;opacity:.75;margin-top:10px}.error{color:var(--error-color,#ff8080)}
 @container (min-width:480px){.buttons{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
+.compact > .season-picker,.compact > .buttons{display:none}
 .options-trigger{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;margin-top:2px;min-height:42px;font-weight:600;background:transparent}
 .options-trigger .caret{font-size:16px;transition:transform .15s ease}
 .options-trigger[aria-expanded="true"] .caret{transform:rotate(180deg)}
@@ -733,7 +736,22 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .figure-picker-note{font-size:11px;opacity:.7;margin:6px 0 0}
 `;
 class FrankysSeasonalCard extends HTMLElement{
- constructor(){super();this.attachShadow({mode:'open'});this._listener=()=>this.update();this._language='';}
+ get preview(){return this._preview;}
+ set preview(value){
+   const next=Boolean(value);
+   if(this._preview===next)return;
+   this._preview=next;
+   if(this.config)this.render(true);
+ }
+ set editMode(value){this.preview=value;}
+ syncDisplayMode(){
+   if(!this.config)return;
+   const hide=this.config.display_mode==='hidden'&&!this._preview;
+   if(Boolean(this.hidden)===hide)return;
+   this.hidden=hide;
+   if(typeof this.dispatchEvent==='function')this.dispatchEvent(new Event('card-visibility-changed',{bubbles:true,composed:true}));
+ }
+ constructor(){super();this.attachShadow({mode:'open'});this._listener=()=>this.update();this._language='';this.connectedWhileHidden=true;this._preview=false;}
  set hass(h){
    const lang=h?.locale?.language||h?.language||navigator.language;
    window.__frankysHassLang=lang;
@@ -750,6 +768,11 @@ class FrankysSeasonalCard extends HTMLElement{
  static getConfigElement(){return document.createElement('frankys-seasonal-card-editor');}
  render(force=false){
    if(!this.config)return;
+   this.syncDisplayMode();
+   if(this.config.display_mode==='hidden'&&this._preview){
+     this.shadowRoot.innerHTML=`<style>:host{display:block;color:var(--primary-text-color,#edf6ff)}ha-card{display:block;padding:16px;border:2px dashed var(--primary-color,#08c9f0);border-radius:12px;background:var(--ha-card-background,var(--card-background-color,#1b2836))}strong{display:block;margin-bottom:6px}</style><ha-card id="hide-placeholder"><strong>${tr('Frankys Seasonal Fun Card – versteckt','Franky’s Seasonal Fun Card – hidden')}</strong><div>${tr('Nur beim Bearbeiten sichtbar. Die Animationen und Zeitpläne laufen weiter.','Visible while editing only. Animations and schedules continue.')}</div></ha-card>`;
+     return;
+   }
    if(!force && this.shadowRoot.getElementById('season')){this.update();return;}
    const preview=this.stateNeedsPreview();
    const optionsOpen=this.shadowRoot.getElementById('options')?.getAttribute('aria-expanded')==='true';
@@ -765,7 +788,7 @@ class FrankysSeasonalCard extends HTMLElement{
          <label>${tr('Bis (TT.MM)','Until (DD.MM)')}<input type="text" maxlength="5" inputmode="numeric" placeholder="TT.MM" data-calendar-holiday="${id}" data-field="end" value="${format(holiday.end)}"></label>
        </div></section>`;
    }).join('');
-   this.shadowRoot.innerHTML=`<style>${style}</style><style id="seasonal-custom-style"></style><ha-card>
+   this.shadowRoot.innerHTML=`<style>${style}</style><style id="seasonal-custom-style"></style><ha-card class="${this.config.display_mode==='compact'?'compact':''}">
      <div class="heading"><div class="name"></div><span class="status"></span></div>
      <div id="migration-note" class="migration-note" hidden role="status">
       <strong>${tr("Franky's Christmas Card heißt jetzt Franky's Seasonal Fun Card!","Franky's Christmas Card is now Franky's Seasonal Fun Card!")}</strong>
@@ -961,6 +984,7 @@ class FrankysSeasonalEditor extends HTMLElement{
    const c={...this.config,santa_schedule_mode:this.config.santa_schedule_mode||ctrl.state.mode,santa_schedule_start:this.config.santa_schedule_start||ctrl.state.start,santa_schedule_end:this.config.santa_schedule_end||ctrl.state.end,santa_interval_minutes:this.config.santa_interval_minutes||ctrl.state.interval_minutes},html=[];
    const expanded=[...this.shadowRoot.querySelectorAll('details')].flatMap((node,i)=>node.open?[i]:[]);
    const choiceLabel=(key,value)=>{
+     if(key==='display_mode')return ({normal:tr('Normal – gesamte Karte','Normal – full card'),compact:tr('Kompakt – Status und Optionen','Compact – status and options'),hidden:tr('Versteckt – nur Animationen','Hidden – animations only')})[value]||String(value);
      if(key==='season')return ({christmas:tr('Weihnachten','Christmas'),halloween:'Halloween',st_martin:'St. Martin',nikolaus:tr('Nikolaus','St. Nicholas')})[value]||String(value);
      if(key==='schedule_mode'||key==='santa_schedule_mode'||key==='christkind_schedule_mode')return ({daily:tr('1–10× täglich','1–10 times daily'),hourly:tr('Jede volle Stunde','Every full hour'),'1-2':tr('1–2 Minuten','1–2 minutes'),'3-8':tr('3–8 Minuten','3–8 minutes'),'5-10':tr('5–10 Minuten','5–10 minutes'),'10-20':tr('10–20 Minuten','10–20 minutes'),custom:tr('Eigenes Intervall','Custom interval')})[value]||String(value);
      if(['controls_locked','santa_enabled','santa_sound_enabled','christkind_enabled','christkind_sound_enabled'].includes(key))return String(value)==='true'?tr('Ein','On'):tr('Aus','Off');
@@ -975,6 +999,8 @@ class FrankysSeasonalEditor extends HTMLElement{
    html.push(`<h3>${tr('Allgemein','General')}</h3>`);
    str('title',tr('Titel','Title'));
    select('controls_locked',tr('Kindersicherung (Kartenbedienung sperren)','Child lock (disable card controls)'),[false,true]);
+   select('display_mode',tr('Darstellung der Karte','Card display mode'),['normal','compact','hidden']);
+   html.push(`<small>${tr('Im Modus „Versteckt“ belegt die Karte keinen Platz im Dashboard. Beim Bearbeiten erscheint ein Platzhalter, damit sie weiterhin konfiguriert werden kann.','Hidden mode uses no dashboard space. A placeholder appears when editing so the card remains configurable.')}</small>`);
    select('season',tr('Saison','Season'),SCENES);
    select('schedule_mode',tr('Zeitplan','Schedule'),SCHEDULE);
    str('schedule_start',tr('Von (HH:MM)','From (HH:MM)'));str('schedule_end',tr('Bis (HH:MM)','Until (HH:MM)'));
