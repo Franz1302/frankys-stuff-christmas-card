@@ -18,6 +18,6 @@ assert(card.includes('christkind_lipsync_safari.webp'),'Card must configure Safa
 assert(card.includes('christkind_lipsync_safari.mp3'),'Card must configure separate Safari soundtrack');
 assert(card.includes('const appleMobile='),'Apple iPad browsers must select the fallback');
 assert(card.includes('const safariDesktop='),'Safari desktop must select the fallback');
-assert(card.includes("const VERSION='0.5.3'"),'Version must be bumped');
-assert(entry.includes("frankys-seasonal-card.js?v=0.5.3"),'HACS entry must load the new version');
-console.log('OK: animated WebP alpha, bundled MP3, Apple UA fallback and v0.5.3 loader');
+assert(card.includes("const VERSION='0.5.4'"),'Version must be bumped');
+assert(entry.includes("frankys-seasonal-card.js?v=0.5.4"),'HACS entry must load the new version');
+console.log('OK: animated WebP alpha, bundled MP3, Apple UA fallback and v0.5.4 loader');

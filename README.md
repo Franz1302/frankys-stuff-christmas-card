@@ -46,6 +46,16 @@ The new files are `dist/assets/christkind_lipsync_safari.webp` and `dist/assets/
 
 This release adds the annual calendar, St. Martin and St. Nicholas animations with synchronized Mirelo sound. **All calendar edits made in the card are stored per browser** (not synced between displays). Audio generated on the Mirelo Free Plan is for non-commercial use only and must visibly credit Mirelo; code remains MIT, third-party media has separate terms. See [media attribution and restrictions](SEASONAL_ASSET_SOURCES.md).
 
+## Version 0.5.4 — Display modes
+
+- **Normal:** Full card, all controls visible.
+- **Compact:** Status and Options visible.
+- **Hidden:** No card space on the dashboard; automatic animations and sound keep running. The card remains editable in dashboard edit mode.
+
+When the annual calendar is enabled, manually choosing a season overrides its selection **for the rest of that day**. On the next day, the calendar takes over again. The **Test** button plays a scene without changing the scheduled season. Each browser/display keeps its own settings.
+
+The dashboard must be loaded for its browser-local scheduler to run; browser sound autoplay restrictions still apply.
+
 ## Features
 
 - **Season** button: manual Christmas, Halloween, St. Martin or St. Nicholas selection; the manual choice overrides the holiday calendar for the current date.

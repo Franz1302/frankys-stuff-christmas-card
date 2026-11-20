@@ -32,6 +32,7 @@ jobs:
           node tests/ha-test-installation.test.cjs
           node tests/seasonal-fun.test.cjs
           node tests/figure-selection.test.cjs
+          node tests/hide-mode.test.cjs
           node tests/safari-alpha.test.cjs
           node tests/cache-busting.test.cjs
           node tests/seasonal-calendar.test.cjs
@@ -57,3 +58,26 @@ jobs:
           # The HACS image checker sometimes reads the previous published release
           # instead of this release candidate; README image is verified above.
           ignore: images
+
+  publish_v054:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[publish v0.5.4]')
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish v0.5.4 on GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view v0.5.4 >/dev/null 2>&1; then
+            echo 'Release v0.5.4 already exists.'
+            exit 0
+          fi
+          printf '%s\n' \
+            'New display modes: Normal, Compact and Hidden.' \
+            'In Hidden mode, automatic animations and sound continue; the card takes no dashboard space.' \
+            'Manual season choice overrides the automatic calendar for the current day.' \
+            > /tmp/frankys-v054-release-notes.txt
+          gh release create v0.5.4 --target "$GITHUB_SHA" --title "Franky's Seasonal Fun Card v0.5.4" --notes-file /tmp/frankys-v054-release-notes.txt --latest
