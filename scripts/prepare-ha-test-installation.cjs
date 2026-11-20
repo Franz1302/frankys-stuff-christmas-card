@@ -50,7 +50,7 @@ function transformBundle(directory){
  const entryFile=path.join(directory,'frankys-christmas-card.js');
  if(fs.existsSync(entryFile)){
   const entrySource=fs.readFileSync(entryFile,'utf8')
-   .replace("import './frankys-seasonal-test-card.js?v=0.5.3';","import './frankys-seasonal-card.js?v=0.5.3';");
+   .replace("import './frankys-seasonal-test-card.js?v=0.5.4';","import './frankys-seasonal-card.js?v=0.5.4';");
   fs.writeFileSync(entryFile,entrySource,'utf8');
  }
 }

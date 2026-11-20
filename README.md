@@ -46,15 +46,15 @@ The new files are `dist/assets/christkind_lipsync_safari.webp` and `dist/assets/
 
 This release adds the annual calendar, St. Martin and St. Nicholas animations with synchronized Mirelo sound. **All calendar edits made in the card are stored per browser** (not synced between displays). Audio generated on the Mirelo Free Plan is for non-commercial use only and must visibly credit Mirelo; code remains MIT, third-party media has separate terms. See [media attribution and restrictions](SEASONAL_ASSET_SOURCES.md).
 
-## Display modes (in development)
+## Version 0.5.4 — Display modes
 
-The visual card editor offers **Normal**, **Compact** (status and Options only), and **Hidden** (animations only). In Hidden mode, Home Assistant hides the card's dashboard slot while its shared scheduler remains connected; existing settings, media, and schedules are unchanged. A placeholder is shown automatically while the dashboard is in edit mode, so the card can be configured again without YAML or `card_mod`.
+- **Normal:** Full card, all controls visible.
+- **Compact:** Status and Options visible.
+- **Hidden:** No card space on the dashboard; automatic animations and sound keep running. The card remains editable in dashboard edit mode.
 
-The dashboard containing the card must be loaded for the browser-local scheduler to run. Hiding an entire dashboard or leaving it unloaded will not start its animations. **This feature is currently available only on the development branch and is not released.**
+When the annual calendar is enabled, manually choosing a season overrides its selection **for the rest of that day**. On the next day, the calendar takes over again. The **Test** button plays a scene without changing the scheduled season. Each browser/display keeps its own settings.
 
-## Automatic calendar and manual season selection
-
-When the **annual calendar** is enabled, the card normally chooses the season automatically according to the configured holiday dates. **Manually selecting a season on the card overrides the calendar's season choice for the rest of the current day**; this is useful for testing a different scene. The calendar takes control again on the **next local calendar day**. The **Test** button plays a scene manually without changing the scheduled season. Calendar and manual selections are stored separately per browser/display.
+The dashboard must be loaded for its browser-local scheduler to run; browser sound autoplay restrictions still apply.
 
 ## Features
 

@@ -1,3 +1,8 @@
+## v0.5.4 — Normal, Compact and Hidden display modes (2026-11-20)
+- Choose **Normal**, **Compact** or **Hidden** in the card's visual editor; Hidden occupies no dashboard space, but stays editable in dashboard edit mode.
+- Automatic seasonal animations, schedules and sound remain unchanged; normal and hidden operation verified with playback and audio.
+- With the automatic calendar enabled, a manual season choice takes precedence until the next local calendar day.
+
 ## 0.5.3 — Safari transparency hotfix
 
 - Safari/iPadOS now uses a bundled transparent animated WebP and synchronized MP3 for the Christkind; the VP9 WebM remains unchanged for other browsers.
